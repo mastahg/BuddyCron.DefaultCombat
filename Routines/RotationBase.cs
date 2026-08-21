@@ -2,6 +2,7 @@
 // See the file LICENSE for the source code's detailed license
 
 using BuddyCron;
+using System.Linq;
 using BuddyCron.Inheritables;
 using BuddyCron.Objects;
 using DefaultCombat.Behaviors;
@@ -19,6 +20,7 @@ namespace DefaultCombat.Routines
         private Composite _combat;
         private Composite _outOfCombat;
         private Composite _pull;
+        private System.DateTime _lastCombatIdleLogUtc = System.DateTime.MinValue;
 
         /// <inheritdoc />
         public abstract override string Name { get; }
@@ -72,7 +74,8 @@ namespace DefaultCombat.Routines
                     Targeting.ScanTargets,
                     Cooldowns,
                     new Decorator(ret => RotationRuntime.IsHealer || CombatHotkeys.EnableAoe, AreaOfEffect),
-                    SingleTarget));
+                    SingleTarget,
+                    new Action(ret => LogCombatIdleState())));
 
             _pull = new Decorator(
                 ret => !CombatHotkeys.PauseRotation &&
@@ -81,6 +84,42 @@ namespace DefaultCombat.Routines
 
             CombatBehavior = _combat;
             RestBehavior = _outOfCombat;
+        }
+
+        private RunStatus LogCombatIdleState()
+        {
+            if (Core.Player == null || !Core.Player.InCombat ||
+                (System.DateTime.UtcNow - _lastCombatIdleLogUtc).TotalSeconds < 1.5)
+            {
+                return RunStatus.Failure;
+            }
+
+            _lastCombatIdleLogUtc = System.DateTime.UtcNow;
+            try
+            {
+                var target = Core.Player.Target;
+                Logger.Write(
+                    "[CombatIdle] target={0} dead={1} combat={2} hostile={3} targetable={4} los={5} distance={6:F1} casting={7} cast={8} remaining={9:F2} moving={10} enemies={11} attackers={12}",
+                    target != null ? target.Name : "none",
+                    target != null && target.IsDead,
+                    target != null && target.InCombat,
+                    target != null && target.IsHostile,
+                    target != null && target.IsTargetable,
+                    target != null && target.InLineOfSight,
+                    target != null ? target.Distance : -1,
+                    Core.Player.IsCasting,
+                    Core.Player.CastingAbility != null ? Core.Player.CastingAbility.Name : "none",
+                    Core.Player.CastTimeRemaining,
+                    Core.Player.IsMoving,
+                    Targeting.Enemies != null ? Targeting.Enemies.Count : 0,
+                    Core.Player.Attackers != null ? Core.Player.Attackers.Count() : 0);
+            }
+            catch (System.Exception exception)
+            {
+                Logger.Write("[CombatIdle] state read failed: " + exception.Message);
+            }
+
+            return RunStatus.Failure;
         }
 
         /// <summary>Gets the buff logic for this routine.</summary>

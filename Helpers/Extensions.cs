@@ -271,18 +271,20 @@ namespace DefaultCombat.Helpers
         /// at or above its stack threshold (threshold 0 = any stacks).</summary>
         public static bool NeedsCleanse(this HeroCharacter p)
         {
-
-            var debuffs = p.Debuffs.ToDictionary(r => r.Name,k=>k.Stacks);
+            var debuffs = p.Debuffs
+                .Where(effect => effect != null && !string.IsNullOrEmpty(effect.Name))
+                .ToList();
 
             foreach (var d in DebuffList)
             {
-                switch (d.Stacks)
+                if (debuffs.Any(effect =>
+                    string.Equals(effect.Name, d.Name, StringComparison.Ordinal) &&
+                    (d.Stacks == 0 || effect.Stacks >= d.Stacks)))
                 {
-                    case 0 when debuffs.ContainsKey(d.Name):
-                    case > 0 when debuffs.TryGetValue(d.Name, out var stacks ) && stacks >= d.Stacks:
-                        return true;
+                    return true;
                 }
             }
+
             return false;
         }
 
@@ -404,13 +406,76 @@ namespace DefaultCombat.Helpers
         }
 
 
-        /// <summary>True for a hostile, living, in-combat character that is neither stunned nor
+        public static bool IsPlayerOrCompanionInCombat(this HeroPlayer player)
+        {
+            try
+            {
+                return player != null &&
+                       (player.InCombat ||
+                        (player.Companion != null && !player.Companion.IsDead && player.Companion.InCombat));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsEngagedWithPlayer(this HeroCharacter c)
+        {
+            try
+            {
+                var player = Core.Player;
+                if (c == null || player == null)
+                    return false;
+
+                var companion = player.Companion;
+                return c.InCombat ||
+                       c.IsInCombatWith(player) ||
+                       player.IsInCombatWith(c) ||
+                       (companion != null && !companion.IsDead &&
+                        (c.IsInCombatWith(companion) || companion.IsInCombatWith(c)));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsEffectivePvEHostile(this HeroCharacter c)
+        {
+            try
+            {
+                if (c == null || c is HeroPlayer)
+                    return false;
+
+                if (c.IsHostile)
+                    return true;
+
+                var player = Core.Player;
+                if (player == null || !c.IsEngagedWithPlayer())
+                    return false;
+
+                if (player.AttackerIds.Contains(c.NodeId))
+                    return true;
+
+                var companion = player.Companion;
+                return companion != null && !companion.IsDead &&
+                       companion.AttackerIds.Contains(c.NodeId);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>True for a hostile, living, engaged character that is neither stunned nor
         /// crowd-controlled; false on null or any read failure.</summary>
         public static bool IsValidTarget(this HeroCharacter c)
         {
             try
             {
-                return c != null && c.InCombat && c.IsHostile && !c.IsDead && !c.IsStunned && !c.IsCrowdControlled();
+                return c != null && c.IsEngagedWithPlayer() && c.IsEffectivePvEHostile() &&
+                       !c.IsDead && !c.IsStunned && !c.IsCrowdControlled();
             }
             catch
             {

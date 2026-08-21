@@ -21,6 +21,38 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Corruption : RotationBase
     {
+        private static readonly MultiDotProfile s_afflictionProfile = new MultiDotProfile
+        {
+            Key = "Corruption.Affliction",
+            AbilityName = "Affliction",
+            DebuffNames = new[] { "Affliction" },
+            DebuffAbilitySpecIds = new[] { 0xE000892C91A4F3EAUL },
+            MaxTargets = 1,
+            ExpectedDurationSeconds = 18,
+            RefreshWindowSeconds = 1.5,
+            Enabled = () => AbilityManager.HasAbility("Affliction"),
+            CandidateProvider = () => Targeting.Enemies,
+            CandidateFilter = IsUsableAfflictionTarget,
+            MinimumTtdSeconds = (target, selected) => 8
+        };
+
+        private static readonly MultiDotCoordinator s_afflictionCoordinator =
+            new MultiDotCoordinator(s_afflictionProfile);
+
+        public Corruption()
+        {
+            s_afflictionCoordinator.Reset();
+        }
+
+        private static bool IsUsableAfflictionTarget(HeroCharacter enemy) =>
+            enemy != null && enemy.IsEngagedWithPlayer() && enemy.IsEffectivePvEHostile() &&
+            enemy.IsTargetable && enemy.InLineOfSight && !enemy.IsDead;
+
+        private static RunStatus TickAffliction(bool allowed)
+        {
+            return allowed ? s_afflictionCoordinator.Tick() : RunStatus.Failure;
+        }
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Corruption;
 
         public override string Name => "Sorcerer Corruption";
@@ -62,6 +94,9 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
+                    new Decorator(
+                        ret => s_afflictionCoordinator.IsBusy,
+                        new Action(ret => s_afflictionCoordinator.Continue())),
                     //Movement
                     CombatMovement.CloseDistance(Distance.Ranged),
 
@@ -70,10 +105,11 @@ namespace DefaultCombat.Routines
 
                     //Filler damage so a solo/leveling healer can actually kill things.
                     //Only runs when nothing above (heals live in AreaOfEffect) wanted the GCD.
-                    new Decorator(ret => Core.Player.Target != null && Core.Player.Target.IsHostile && !Core.Player.Target.IsDead,
+                    new Decorator(ret => Core.Player.Target != null &&
+                        Core.Player.Target.IsEffectivePvEHostile() && !Core.Player.Target.IsDead,
                         new PrioritySelector(
                             Spell.Cast("Jolt", ret => Core.Player.Target.IsCasting && CombatHotkeys.EnableInterrupts),
-                            Spell.DoT("Affliction", "Affliction", 0, ret => Core.Player.ForcePercent >= 50),
+                            new Action(ret => TickAffliction(Core.Player.ForcePercent >= 50)),
                             Spell.Cast("Volt Rush", ret => Core.Player.ForcePercent >= 50),   // lvl 68 choice, skipped if untrained
                             Spell.Cast("Shock", ret => Core.Player.ForcePercent >= 60),
                             Spell.Cast("Lightning Strike", ret => Core.Player.ForcePercent >= 70),

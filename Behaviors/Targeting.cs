@@ -18,8 +18,11 @@ namespace DefaultCombat.Behaviors
     /// consumed by the rotations.</summary>
     public static class Targeting
     {
-        private const int AoedpsCountNeeded = 3;
         private const int AoeHealCountNeeded = 3;
+        private static int s_lastLoggedAoeCount = -1;
+        private static System.DateTime s_lastTargetRecoveryLogUtc = System.DateTime.MinValue;
+        private static System.DateTime s_lastTemporaryAggressorLogUtc = System.DateTime.MinValue;
+        private static ulong s_lastTemporaryAggressorId;
 
         //Settings for making target queries
         private const int MaxHealth = Health.Max;
@@ -178,22 +181,104 @@ namespace DefaultCombat.Behaviors
                         if (!character.IsValidTarget())
                             continue;
 
+                        if (!character.IsHostile &&
+                            (character.NodeId != s_lastTemporaryAggressorId ||
+                             (System.DateTime.UtcNow - s_lastTemporaryAggressorLogUtc).TotalSeconds >= 5))
+                        {
+                            s_lastTemporaryAggressorId = character.NodeId;
+                            s_lastTemporaryAggressorLogUtc = System.DateTime.UtcNow;
+                            Logger.Write("[Targeting] Temporary PvE aggressor accepted: {0} id=0x{1:X}",
+                                character.Name, character.NodeId);
+                        }
+
                         Enemies.Add(character);
                         EnemyPoints.Add(character.Location);
                     }
 
-                    if (Core.Player.Target != null && Core.Player.Target.IsHostile && !Core.Player.Target.IsDead)
+                    foreach (var candidate in Enemies)
                     {
-                        AoeDpsTarget = Core.Player.Target;
-                        AoeDpsPoint = Core.Player.Target.Location;
-                        AoeDpsCount = PointsAroundPoint(Core.Player.Target.Location, EnemyPoints, Distance.MeleeAoE);
-                        ShouldAoe = AoeDpsCount >= AoedpsCountNeeded;
+                        int candidateCount = PointsAroundPoint(candidate.Location, EnemyPoints, Distance.MeleeAoE);
+                        bool selectedTargetTie = candidateCount == AoeDpsCount &&
+                                                 Core.Player.Target != null &&
+                                                 candidate.NodeId == Core.Player.Target.NodeId;
+                        if (candidateCount > AoeDpsCount || selectedTargetTie)
+                        {
+                            AoeDpsTarget = candidate;
+                            AoeDpsPoint = candidate.Location;
+                            AoeDpsCount = candidateCount;
+                        }
+                    }
+
+                    ShouldAoe = AoeDpsCount >= RoutineSettings.Instance.AoeEnemyCount;
+                    if (AoeDpsCount != s_lastLoggedAoeCount)
+                    {
+                        Logger.Write("[AOE] cluster={0} required={1} allowed={2} anchor={3}",
+                            AoeDpsCount,
+                            RoutineSettings.Instance.AoeEnemyCount,
+                            ShouldAoe,
+                            AoeDpsTarget != null ? AoeDpsTarget.Name : "none");
+                        s_lastLoggedAoeCount = AoeDpsCount;
                     }
 
                     AoePeanutButterCount = PointsAroundPoint(Core.Player.Location, EnemyPoints, Distance.MeleeAoE);
-                    ShouldPbaoe = AoePeanutButterCount >= AoedpsCountNeeded;
+                    ShouldPbaoe = AoePeanutButterCount >= RoutineSettings.Instance.AoeEnemyCount;
+                    RecoverCombatTarget();
                     return RunStatus.Failure;
                 });
+            }
+        }
+
+        private static bool IsEngagedWithLocalPlayer(HeroCharacter enemy)
+        {
+            try
+            {
+                var player = Core.Player;
+                if (enemy == null || player == null)
+                    return false;
+
+                if (player.IsInCombatWith(enemy) || enemy.IsInCombatWith(player))
+                    return true;
+
+                var companion = player.Companion;
+                return companion != null && !companion.IsDead &&
+                       (companion.IsInCombatWith(enemy) || enemy.IsInCombatWith(companion));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void RecoverCombatTarget()
+        {
+            if (Core.Player == null || !Core.Player.IsPlayerOrCompanionInCombat() ||
+                RoutineManager.IsAnyDisallowed(CapabilityFlags.Targeting))
+            {
+                return;
+            }
+
+            var selected = Core.Player.Target;
+            if (selected != null && !selected.IsDead && selected.IsEffectivePvEHostile() &&
+                selected.IsTargetable)
+                return;
+
+            var replacement = Enemies
+                .Where(enemy => enemy != null && !enemy.IsDead && enemy.IsEffectivePvEHostile() &&
+                                enemy.IsTargetable && enemy.InLineOfSight &&
+                                enemy.DistanceSqr <= Distance.Ranged * Distance.Ranged)
+                .OrderByDescending(IsEngagedWithLocalPlayer)
+                .ThenBy(enemy => enemy.HealthPercent)
+                .ThenByDescending(enemy => enemy.StrongOrGreater())
+                .FirstOrDefault();
+
+            if (replacement == null)
+                return;
+
+            replacement.SetTarget();
+            if ((System.DateTime.UtcNow - s_lastTargetRecoveryLogUtc).TotalSeconds >= 1)
+            {
+                s_lastTargetRecoveryLogUtc = System.DateTime.UtcNow;
+                Logger.Write("[TargetRecovery] Selected " + replacement.Name);
             }
         }
 
