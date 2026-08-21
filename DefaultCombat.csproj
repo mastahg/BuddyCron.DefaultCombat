@@ -3,31 +3,23 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <!-- No ImplicitUsings: the runtime CodeCompiler compiles these files without them,
-         so every file must carry explicit usings; building the same way here catches misses. -->
     <ImplicitUsings>disable</ImplicitUsings>
-    <!-- This ported code predates nullable reference types; keep the noise down. -->
     <Nullable>disable</Nullable>
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
     <RootNamespace>DefaultCombat</RootNamespace>
     <AssemblyName>DefaultCombat</AssemblyName>
-    <!-- Keys (hotkeys) needs WinForms; Logger colors need WPF (System.Windows.Media). -->
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-    <!-- Deployed as SOURCE by BuddyCron's copy target; this DLL is never shipped, so skip the
-         project when the solution is published. Building it (the point of this project) is
-         unaffected. -->
     <IsPublishable>false</IsPublishable>
   </PropertyGroup>
 
-  <!-- BuddyCronRefs.props supplies the host reference set: project references in the repo and the
-       compile-only reference package when this .csproj is opened from an install. -->
   <PropertyGroup>
     <BuddyCronRefsProps>$([MSBuild]::GetPathOfFileAbove('BuddyCronRefs.props', '$(MSBuildThisFileDirectory)'))</BuddyCronRefsProps>
   </PropertyGroup>
+
   <Import Project="$(BuddyCronRefsProps)" Condition="'$(BuddyCronRefsProps)' != ''" />
 
 </Project>
