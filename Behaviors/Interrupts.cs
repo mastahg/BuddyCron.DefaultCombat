@@ -82,45 +82,45 @@ namespace DefaultCombat.Behaviors
         private static readonly HashSet<string> s_priorityHealingAbilities =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-            "Advanced Medical Probe",
-            "Benevolence",
-            "Configuring Repair Mode",
-            "Dark Heal",
-            "Dark Infusion",
-            "Deliverance",
-            "Diagnostic Scan",
-            "Emergency Medpac",
-            "Healing Trance",
-            "Kolto Infusion",
-            "Kolto Injection",
-            "Kolto Pack",
-            "Kolto Probe",
-            "Kolto Scan",
-            "Med Scan",
-            "Medical Probe",
-            "Progressive Scan",
-            "Rapid Scan",
-            "Repair Mode",
-            "Salvation",
-            "Supplication",
-            "Surgical Probe",
-            "Underworld Medicine"
-        };
+                "Advanced Medical Probe",
+                "Benevolence",
+                "Configuring Repair Mode",
+                "Dark Heal",
+                "Dark Infusion",
+                "Deliverance",
+                "Diagnostic Scan",
+                "Emergency Medpac",
+                "Healing Trance",
+                "Kolto Infusion",
+                "Kolto Injection",
+                "Kolto Pack",
+                "Kolto Probe",
+                "Kolto Scan",
+                "Med Scan",
+                "Medical Probe",
+                "Progressive Scan",
+                "Rapid Scan",
+                "Repair Mode",
+                "Salvation",
+                "Supplication",
+                "Surgical Probe",
+                "Underworld Medicine"
+            };
 
         private static readonly HashSet<string> s_priorityAbilities =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-            "Calibrating Weapons System",
-            "Charged Blast",
-            "Force Blast",
-            "Force Explosion",
-            "Incinerate Armor",
-            "Plasma Arc",
-            "Power of the Force",
-            "Ravage",
-            "Transliminal Coating",
-            "Unlimited Power"
-        };
+                "Calibrating Weapons System",
+                "Charged Blast",
+                "Force Blast",
+                "Force Explosion",
+                "Incinerate Armor",
+                "Plasma Arc",
+                "Power of the Force",
+                "Ravage",
+                "Transliminal Coating",
+                "Unlimited Power"
+            };
 
         private static readonly string[] s_priorityNameFragments =
         {
