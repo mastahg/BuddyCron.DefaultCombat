@@ -2,6 +2,7 @@
 // See the file LICENSE for the source code's detailed license
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BuddyCron;
 using BuddyCron.Managers;
@@ -18,20 +19,69 @@ namespace DefaultCombat.Behaviors
         private const float MinimumCastSeconds = 0.35f;
         private const float MinimumRemainingSeconds = 0.10f;
 
-        private static readonly string[] s_interruptAbilities =
-        {
-            "Jolt",
-            "Mind Snap",
-            "Disruption",
-            "Force Kick",
-            "Quell",
-            "Riot Strike",
-            "Distraction",
-            "Disabling Shot"
-        };
+        private static readonly Dictionary<CharacterDiscipline, string> s_interruptAbilities =
+            new Dictionary<CharacterDiscipline, string>
+            {
+                { CharacterDiscipline.Darkness, "Jolt" },
+                { CharacterDiscipline.Deception, "Jolt" },
+                { CharacterDiscipline.Hatred, "Jolt" },
+                { CharacterDiscipline.Corruption, "Jolt" },
+                { CharacterDiscipline.Lightning, "Jolt" },
+                { CharacterDiscipline.Madness, "Jolt" },
 
-        private static readonly string[] s_priorityHealingAbilities =
-        {
+                { CharacterDiscipline.Balance, "Mind Snap" },
+                { CharacterDiscipline.Seer, "Mind Snap" },
+                { CharacterDiscipline.Telekinetics, "Mind Snap" },
+                { CharacterDiscipline.Infiltration, "Mind Snap" },
+                { CharacterDiscipline.KineticCombat, "Mind Snap" },
+                { CharacterDiscipline.Serenity, "Mind Snap" },
+
+                { CharacterDiscipline.Annihilation, "Disruption" },
+                { CharacterDiscipline.Carnage, "Disruption" },
+                { CharacterDiscipline.Fury, "Disruption" },
+                { CharacterDiscipline.Immortal, "Disruption" },
+                { CharacterDiscipline.Rage, "Disruption" },
+                { CharacterDiscipline.Vengeance, "Disruption" },
+
+                { CharacterDiscipline.Combat, "Force Kick" },
+                { CharacterDiscipline.Concentration, "Force Kick" },
+                { CharacterDiscipline.Watchman, "Force Kick" },
+                { CharacterDiscipline.Defense, "Force Kick" },
+                { CharacterDiscipline.Focus, "Force Kick" },
+                { CharacterDiscipline.Vigilance, "Force Kick" },
+
+                { CharacterDiscipline.AdvancedPrototype, "Quell" },
+                { CharacterDiscipline.FirebugPyrotech, "Quell" },
+                { CharacterDiscipline.ShieldTech, "Quell" },
+                { CharacterDiscipline.Arsenal, "Quell" },
+                { CharacterDiscipline.Bodyguard, "Quell" },
+                { CharacterDiscipline.InnovativeOrdnance, "Quell" },
+
+                { CharacterDiscipline.AssaultSpecialist, "Riot Strike" },
+                { CharacterDiscipline.CombatMedic, "Riot Strike" },
+                { CharacterDiscipline.Gunnery, "Riot Strike" },
+                { CharacterDiscipline.Plasmatech, "Riot Strike" },
+                { CharacterDiscipline.ShieldSpecialist, "Riot Strike" },
+                { CharacterDiscipline.Tactics, "Riot Strike" },
+
+                { CharacterDiscipline.Concealment, "Distraction" },
+                { CharacterDiscipline.Lethality, "Distraction" },
+                { CharacterDiscipline.Medicine, "Distraction" },
+                { CharacterDiscipline.Engineering, "Distraction" },
+                { CharacterDiscipline.Marksmanship, "Distraction" },
+                { CharacterDiscipline.Virulence, "Distraction" },
+
+                { CharacterDiscipline.DirtyFighting, "Disabling Shot" },
+                { CharacterDiscipline.Saboteur, "Disabling Shot" },
+                { CharacterDiscipline.Sharpshooter, "Disabling Shot" },
+                { CharacterDiscipline.Ruffian, "Disabling Shot" },
+                { CharacterDiscipline.Sawbones, "Disabling Shot" },
+                { CharacterDiscipline.Scrapper, "Disabling Shot" }
+            };
+
+        private static readonly HashSet<string> s_priorityHealingAbilities =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
             "Advanced Medical Probe",
             "Benevolence",
             "Configuring Repair Mode",
@@ -57,8 +107,9 @@ namespace DefaultCombat.Behaviors
             "Underworld Medicine"
         };
 
-        private static readonly string[] s_priorityAbilities =
-        {
+        private static readonly HashSet<string> s_priorityAbilities =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
             "Calibrating Weapons System",
             "Charged Blast",
             "Force Blast",
@@ -104,8 +155,8 @@ namespace DefaultCombat.Behaviors
             if (target == null || PriorityRank(target) == 0)
                 return RunStatus.Failure;
 
-            var interrupt = s_interruptAbilities.FirstOrDefault(ability => AbilityManager.HasAbility(ability));
-            if (string.IsNullOrEmpty(interrupt))
+            if (!s_interruptAbilities.TryGetValue(Core.Player.CharacterDiscipline, out var interrupt) ||
+                !AbilityManager.HasAbility(interrupt))
                 return RunStatus.Failure;
 
             if (Core.Player.IsCasting)
@@ -170,16 +221,14 @@ namespace DefaultCombat.Behaviors
             var castName = unit.CastingAbility.Name;
             if (string.IsNullOrEmpty(castName))
                 return 0;
-            if (s_priorityHealingAbilities.Any(name =>
-                    string.Equals(name, castName, StringComparison.OrdinalIgnoreCase)) ||
+            if (s_priorityHealingAbilities.Contains(castName) ||
                 s_priorityNameFragments.Any(fragment =>
                     castName.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 return 2;
             }
 
-            return s_priorityAbilities.Any(name =>
-                string.Equals(name, castName, StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+            return s_priorityAbilities.Contains(castName) ? 1 : 0;
         }
     }
 }
