@@ -189,19 +189,7 @@ namespace DefaultCombat.Behaviors
                     return false;
                 }
 
-                var me = Core.Player;
-                if (me.Target != null && enemy.NodeId == me.Target.NodeId)
-                    return true;
-                if (enemy.IsInCombatWith(me) || me.IsInCombatWith(enemy))
-                    return true;
-                if (me.Companion != null &&
-                    (enemy.IsInCombatWith(me.Companion) || me.Companion.IsInCombatWith(enemy)))
-                {
-                    return true;
-                }
-
-                return me.PartyMembers(true).Any(member => member != null &&
-                    (enemy.IsInCombatWith(member) || member.IsInCombatWith(enemy)));
+                return Targeting.IsEngagedWithParty(enemy);
             }
             catch
             {
