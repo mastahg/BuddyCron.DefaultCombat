@@ -20,6 +20,8 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Telekinetics : RotationBase
     {
+        private const double MindCrushMinimumTtd = 8;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Telekinetics;
 
         public override string Name => "Sage Telekinetics";
@@ -78,7 +80,9 @@ namespace DefaultCombat.Routines
 
                     //Telekinetic Gust applies Stormwatch and grants Force Gust (faster Mind Crush)
                     Spell.Cast("Telekinetic Gust"),
-                    Spell.Cast("Mind Crush", ret => Core.Player.HasBuff("Force Gust")),
+                    Spell.Cast("Mind Crush",
+                        ret => Core.Player.HasBuff("Force Gust") &&
+                               TimeToDie.WillLiveFor(Core.Player.Target, MindCrushMinimumTtd)),
 
                     //Tidal Force makes the next Telekinetic Wave (or Power of the Force) instant + cheap.
                     //Power of the Force is an ability-tree choice (lvl 23) -- skipped if not taken.
@@ -90,7 +94,8 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Project", ret => Core.Player.Target.HasMyDebuff("Crushed (Force)") || Core.Player.Level < 30),
 
                     //Mind Crush on cooldown even without the Force Gust proc
-                    Spell.Cast("Mind Crush"),
+                    Spell.Cast("Mind Crush",
+                        ret => TimeToDie.WillLiveFor(Core.Player.Target, MindCrushMinimumTtd)),
 
                     //Telekinetic Blitz is a movement fallback unless a tactical-specific AoE policy owns it.
                     Spell.Cast("Telekinetic Blitz", ret => Core.Player.IsMoving),
