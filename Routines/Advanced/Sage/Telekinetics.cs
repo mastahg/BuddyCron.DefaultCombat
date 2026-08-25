@@ -82,7 +82,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Telekinetic Gust"),
                     Spell.Cast("Mind Crush",
                         ret => Core.Player.HasBuff("Force Gust") &&
-                               TimeToDie.WillLiveFor(Core.Player.Target, MindCrushMinimumTtd)),
+                               Core.Player.Target.WillLiveFor(MindCrushMinimumTtd)),
 
                     //Tidal Force makes the next Telekinetic Wave (or Power of the Force) instant + cheap.
                     //Power of the Force is an ability-tree choice (lvl 23) -- skipped if not taken.
@@ -95,7 +95,7 @@ namespace DefaultCombat.Routines
 
                     //Mind Crush on cooldown even without the Force Gust proc
                     Spell.Cast("Mind Crush",
-                        ret => TimeToDie.WillLiveFor(Core.Player.Target, MindCrushMinimumTtd)),
+                        ret => Core.Player.Target.WillLiveFor(MindCrushMinimumTtd)),
 
                     //Telekinetic Blitz is a movement fallback unless a tactical-specific AoE policy owns it.
                     Spell.Cast("Telekinetic Blitz", ret => Core.Player.IsMoving),

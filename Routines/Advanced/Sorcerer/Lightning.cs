@@ -85,7 +85,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Lightning Flash"),   // grants Force Flash + Stormwatch
                     Spell.Cast("Crushing Darkness",
                         ret => (Core.Player.HasBuff("Force Flash") || Core.Player.Level < 50) &&
-                               TimeToDie.WillLiveFor(Core.Player.Target, CrushingDarknessMinimumTtd)),
+                               Core.Player.Target.WillLiveFor(CrushingDarknessMinimumTtd)),
                     Spell.Cast("Shock", ret => Core.Player.Target.HasMyDebuff("Crushed (Crushing Darkness)") || Core.Player.Level < 26),
                     Spell.Cast("Chain Lightning", ret => Core.Player.HasBuff("Lightning Storm")),
                     // lvl 23 choice (apc.sith_inquisitor.sorcerer.lightning_mods), replaces Chain Lightning.

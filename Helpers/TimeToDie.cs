@@ -14,25 +14,60 @@ namespace DefaultCombat.Helpers
         private const double RecentWindowSeconds = 2;
         private const double MinimumSampleSpanSeconds = 1.25;
         private const double HistoryRetentionSeconds = 15;
+        private const int SampleCapacity = (int)(SampleWindowSeconds / SampleIntervalSeconds) + 1;
 
-        private sealed class Sample
-        {
-            public DateTime Time;
-            public float Health;
-        }
+        private sealed record Sample(DateTime Time, float Health);
 
         private sealed class History
         {
-            public readonly List<Sample> Samples = new List<Sample>();
+            public readonly Sample[] Samples = new Sample[SampleCapacity];
             public DateTime LastSeen;
+            public int Count;
+            public int NextIndex;
+
+            public Sample Oldest => Count == 0
+                ? null
+                : Samples[(NextIndex - Count + SampleCapacity) % SampleCapacity];
+
+            public Sample Newest => Count == 0
+                ? null
+                : Samples[(NextIndex - 1 + SampleCapacity) % SampleCapacity];
+
+            public void Add(Sample sample)
+            {
+                if (Newest != null && (sample.Time - Newest.Time).TotalSeconds > SampleWindowSeconds)
+                {
+                    Count = 0;
+                    NextIndex = 0;
+                }
+
+                Samples[NextIndex] = sample;
+                NextIndex = (NextIndex + 1) % SampleCapacity;
+                if (Count < SampleCapacity)
+                    Count++;
+            }
+
+            public Sample AtLeastSecondsBeforeNewest(double seconds)
+            {
+                var candidate = Oldest;
+                for (var i = 0; i < Count; i++)
+                {
+                    var sample = Samples[(NextIndex - Count + i + SampleCapacity) % SampleCapacity];
+                    if ((Newest.Time - sample.Time).TotalSeconds < seconds)
+                        break;
+                    candidate = sample;
+                }
+
+                return candidate;
+            }
         }
 
         private static readonly Dictionary<ulong, History> s_histories =
             new Dictionary<ulong, History>();
 
-        public static bool WillLiveFor(HeroCharacter target, double minimumSeconds)
+        public static bool WillLiveFor(this HeroCharacter target, double minimumSeconds)
         {
-            if (target == null || target.IsDead)
+            if (target == null || !target.IsValid || target.IsDead)
                 return false;
 
             var health = ReadHealthPercent(target);
@@ -56,15 +91,13 @@ namespace DefaultCombat.Helpers
             }
 
             history.LastSeen = now;
-            var samples = history.Samples;
-            var last = samples.LastOrDefault();
+            var last = history.Newest;
             if (last == null || (now - last.Time).TotalSeconds >= SampleIntervalSeconds ||
                 last.Health - health >= 0.25f)
             {
-                samples.Add(new Sample { Time = now, Health = health });
+                history.Add(new Sample(now, health));
             }
 
-            samples.RemoveAll(sample => (now - sample.Time).TotalSeconds > SampleWindowSeconds);
             foreach (var id in s_histories
                 .Where(pair => (now - pair.Value.LastSeen).TotalSeconds > HistoryRetentionSeconds)
                 .Select(pair => pair.Key)
@@ -73,13 +106,12 @@ namespace DefaultCombat.Helpers
                 s_histories.Remove(id);
             }
 
-            if (samples.Count < 2)
+            if (history.Count < 2)
                 return null;
 
-            var first = samples[0];
-            var newest = samples[samples.Count - 1];
-            var recent = samples.LastOrDefault(sample =>
-                (newest.Time - sample.Time).TotalSeconds >= RecentWindowSeconds) ?? first;
+            var first = history.Oldest;
+            var newest = history.Newest;
+            var recent = history.AtLeastSecondsBeforeNewest(RecentWindowSeconds);
             var span = (newest.Time - first.Time).TotalSeconds;
             if (span < MinimumSampleSpanSeconds)
                 return null;
@@ -99,15 +131,15 @@ namespace DefaultCombat.Helpers
 
         private static float ReadHealthPercent(HeroCharacter target)
         {
-            var reported = Math.Max(0, Math.Min(100, target.HealthPercent));
+            var reported = MathF.Max(0, MathF.Min(100, target.HealthPercent));
             try
             {
-                var current = Convert.ToDouble(target.Health);
-                var maximum = Convert.ToDouble(target.HealthMax);
+                var current = target.Health;
+                var maximum = target.HealthMax;
                 if (current > 0 && maximum > 0)
                 {
-                    var live = (float)Math.Max(0, Math.Min(100, current * 100 / maximum));
-                    return reported > 0 ? Math.Min(reported, live) : live;
+                    var live = MathF.Max(0, MathF.Min(100, current * 100f / maximum));
+                    return reported > 0 ? MathF.Min(reported, live) : live;
                 }
             }
             catch
