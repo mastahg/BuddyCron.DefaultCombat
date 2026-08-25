@@ -67,25 +67,10 @@ namespace DefaultCombat.Behaviors
                         {
                             //added current target health percent check
                             Logger.Write(">> Casting <<   " + spell);
-                            StopMovementForCast(spell);
                             AbilityManager.Cast(spell, onUnit(ret));
                             
                         })
                     );
-        }
-
-        private static void StopMovementForCast(string spell)
-        {
-            if (Core.Player == null || !Core.Player.IsMoving || RotationRuntime.MovementDisabled ||
-                RoutineManager.IsAnyDisallowed(CapabilityFlags.Movement))
-            {
-                return;
-            }
-
-            var ability = AbilityManager.KnownAbilities.FirstOrDefault(candidate =>
-                string.Equals(candidate.Name, spell, StringComparison.Ordinal));
-            if (ability != null && (ability.CastingTime > 0 || ability.ChannelingTime > 0))
-                MovementManager.MoveStop();
         }
 
         /// <summary>Casts the ground-targeted <paramref name="spell"/> at the current target's location.</summary>
@@ -134,7 +119,6 @@ namespace DefaultCombat.Behaviors
                         {
                             BlackListedSpells.Add(new ExpiringItem(spell, GetCooldown(spell) + 25 + time, onUnit(ctx).NodeId));
                             Logger.Write(">> Casting on Ground <<   " + spell);
-                            StopMovementForCast(spell);
                             return RunStatus.Failure;
                         }),
                         new Action(ret => { AbilityManager.Cast(spell, onUnit(ret).Location); })));
