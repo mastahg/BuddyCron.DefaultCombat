@@ -16,18 +16,18 @@ namespace DefaultCombat.Helpers
         private const double MinimumSampleSpanSeconds = 1.25;
         private const int SampleCapacity = (int)(SampleWindowSeconds / SampleIntervalSeconds) + 1;
 
-        private sealed record Sample(DateTime Time, float Health);
+        private readonly record struct Sample(DateTime Time, float Health);
 
         private sealed class History
         {
             public readonly Queue<Sample> Samples = new Queue<Sample>();
 
-            public Sample Oldest => Samples.Count == 0 ? null : Samples.Peek();
+            public Sample Oldest => Samples.Peek();
             public Sample Newest { get; private set; }
 
             public void Add(Sample sample)
             {
-                if (Newest != null && (sample.Time - Newest.Time).TotalSeconds > SampleWindowSeconds)
+                if (Samples.Count > 0 && (sample.Time - Newest.Time).TotalSeconds > SampleWindowSeconds)
                     Samples.Clear();
 
                 Samples.Enqueue(sample);
@@ -77,8 +77,9 @@ namespace DefaultCombat.Helpers
         {
             var now = DateTime.UtcNow;
             var history = s_histories.GetValue(target, _ => new History());
+            var hasSamples = history.Samples.Count > 0;
             var last = history.Newest;
-            if (last == null || (now - last.Time).TotalSeconds >= SampleIntervalSeconds ||
+            if (!hasSamples || (now - last.Time).TotalSeconds >= SampleIntervalSeconds ||
                 last.Health - health >= 0.25f)
             {
                 history.Add(new Sample(now, health));
