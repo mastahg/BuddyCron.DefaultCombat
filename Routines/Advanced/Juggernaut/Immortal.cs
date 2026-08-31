@@ -91,10 +91,12 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
+                        //Aegis Assault enables Crushing Blow's cleave; establish the buff first.
+                        Spell.Cast("Aegis Assault", ret => !Core.Player.HasBuff("Aegis Assault")),
                         Spell.Cast("Crushing Blow"),
                         Spell.Cast("Smash"),
                         Spell.Cast("Force Scream"),
-                        Spell.Cast("Aegis Assault", ret => Core.Player.ActionPoints <= 8 || !Core.Player.HasBuff("Aegis Assault")),
+                        Spell.Cast("Aegis Assault", ret => Core.Player.ActionPoints <= 8),
                         Spell.Cast("Retaliation"),
                         Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6)
                         ));
