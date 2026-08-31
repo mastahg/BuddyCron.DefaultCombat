@@ -72,6 +72,7 @@ namespace DefaultCombat.Routines
                     //Alternate the repeating Overhead Slash / Blade Storm / Vigilant Thrust core with
                     //priority slots. Plasma Brand takes the first open slot and resets Blade Barrage;
                     //Blade Barrage is then consumed in a later slot while multiple burns are active.
+                    Spell.Cast("Leaping Strike"), // replaces Overhead Slash when selected
                     Spell.Cast("Overhead Slash"),
                     Spell.Cast("Plasma Brand"),
                     Spell.Cast("Blade Storm", ret => Core.Player.BuffCount("Force Rush") >= 2 || Core.Player.Level < 40),
@@ -102,6 +103,7 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
                         //Get the burns up first, then spread them with Vigilant Thrust
+                        Spell.Cast("Leaping Strike"),
                         Spell.Cast("Overhead Slash"),
                         Spell.Cast("Plasma Brand"),
                         Spell.Cast("Blade Storm"),
