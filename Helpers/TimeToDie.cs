@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using BuddyCron;
 using BuddyCron.Objects;
 using Reborn.Utilities;
@@ -14,46 +14,37 @@ namespace DefaultCombat.Helpers
         private const double SampleWindowSeconds = 5;
         private const double RecentWindowSeconds = 2;
         private const double MinimumSampleSpanSeconds = 1.25;
-        private const double HistoryRetentionSeconds = 15;
         private const int SampleCapacity = (int)(SampleWindowSeconds / SampleIntervalSeconds) + 1;
 
         private sealed record Sample(DateTime Time, float Health);
 
         private sealed class History
         {
-            public readonly Sample[] Samples = new Sample[SampleCapacity];
-            public DateTime LastSeen;
-            public int Count;
-            public int NextIndex;
+            public readonly Queue<Sample> Samples = new Queue<Sample>();
 
-            public Sample Oldest => Count == 0
-                ? null
-                : Samples[(NextIndex - Count + SampleCapacity) % SampleCapacity];
-
-            public Sample Newest => Count == 0
-                ? null
-                : Samples[(NextIndex - 1 + SampleCapacity) % SampleCapacity];
+            public Sample Oldest => Samples.Count == 0 ? null : Samples.Peek();
+            public Sample Newest { get; private set; }
 
             public void Add(Sample sample)
             {
                 if (Newest != null && (sample.Time - Newest.Time).TotalSeconds > SampleWindowSeconds)
-                {
-                    Count = 0;
-                    NextIndex = 0;
-                }
+                    Samples.Clear();
 
-                Samples[NextIndex] = sample;
-                NextIndex = (NextIndex + 1) % SampleCapacity;
-                if (Count < SampleCapacity)
-                    Count++;
+                Samples.Enqueue(sample);
+                Newest = sample;
+
+                while (Samples.Count > SampleCapacity ||
+                       (sample.Time - Samples.Peek().Time).TotalSeconds > SampleWindowSeconds)
+                {
+                    Samples.Dequeue();
+                }
             }
 
             public Sample AtLeastSecondsBeforeNewest(double seconds)
             {
                 var candidate = Oldest;
-                for (var i = 0; i < Count; i++)
+                foreach (var sample in Samples)
                 {
-                    var sample = Samples[(NextIndex - Count + i + SampleCapacity) % SampleCapacity];
                     if ((Newest.Time - sample.Time).TotalSeconds < seconds)
                         break;
                     candidate = sample;
@@ -63,8 +54,8 @@ namespace DefaultCombat.Helpers
             }
         }
 
-        private static readonly Dictionary<ulong, History> s_histories =
-            new Dictionary<ulong, History>();
+        private static readonly ConditionalWeakTable<HeroCharacter, History> s_histories =
+            new ConditionalWeakTable<HeroCharacter, History>();
 
         public static bool WillLiveFor(this HeroCharacter target, double minimumSeconds)
         {
@@ -85,13 +76,7 @@ namespace DefaultCombat.Helpers
         private static double? Estimate(HeroCharacter target, float health)
         {
             var now = DateTime.UtcNow;
-            if (!s_histories.TryGetValue(target.NodeId, out var history))
-            {
-                history = new History();
-                s_histories[target.NodeId] = history;
-            }
-
-            history.LastSeen = now;
+            var history = s_histories.GetValue(target, _ => new History());
             var last = history.Newest;
             if (last == null || (now - last.Time).TotalSeconds >= SampleIntervalSeconds ||
                 last.Health - health >= 0.25f)
@@ -99,15 +84,7 @@ namespace DefaultCombat.Helpers
                 history.Add(new Sample(now, health));
             }
 
-            foreach (var id in s_histories
-                .Where(pair => (now - pair.Value.LastSeen).TotalSeconds > HistoryRetentionSeconds)
-                .Select(pair => pair.Key)
-                .ToList())
-            {
-                s_histories.Remove(id);
-            }
-
-            if (history.Count < 2)
+            if (history.Samples.Count < 2)
                 return null;
 
             var first = history.Oldest;
