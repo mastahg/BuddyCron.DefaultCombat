@@ -34,10 +34,10 @@ namespace DefaultCombat.Behaviors
         {
             return new Decorator(
                 ret => !RotationRuntime.MovementDisabled,
-                CommonBehaviors.MoveAndStop(
-                    location => Core.Player.Target.Location,
+                CommonBehaviors.MoveIntoRange(
+                    location => Core.Player.Target,
                     ret => range,
-                    true,
+                    false,
                     ret => $"Closing to {range} on {Core.Player.Target.Name}"));
         }
     }
