@@ -51,7 +51,7 @@ namespace DefaultCombat.Routines
 
                     //Offensive
                     Spell.Buff("Hunker Down", ret => Core.Player.Target.StrongOrGreater() && Core.Player.IsInCover()),
-                    Spell.Cast("Smuggler's Luck"),
+                    Spell.Buff("Smuggler's Luck"),
                     //Ability tree choice (lvl 43) -- silently skipped when not chosen
                     Spell.Cast("Illegal Mods", ret => Core.Player.Target.StrongOrGreater()),
 
