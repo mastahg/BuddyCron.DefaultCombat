@@ -68,7 +68,6 @@ namespace DefaultCombat.Routines
                     //Alternate the repeating Impale / Force Scream / Vengeful Slam core with priority
                     //slots. Shatter takes the first open slot and resets Ravage; Ravage is then consumed
                     //in a later slot while multiple bleeds are active.
-                    Spell.Cast("Skewering Strike"), // replaces Impale when selected
                     Spell.Cast("Impale"),
                     Spell.Cast("Shatter"),
                     Spell.Cast("Force Scream",
@@ -95,7 +94,6 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
-                        Spell.Cast("Skewering Strike"),
                         Spell.Cast("Impale"),
                         Spell.Cast("Shatter"),
                         Spell.Cast("Force Scream"),
