@@ -271,8 +271,10 @@ namespace DefaultCombat.Helpers
         /// at or above its stack threshold (threshold 0 = any stacks).</summary>
         public static bool NeedsCleanse(this HeroCharacter p)
         {
-
-            var debuffs = p.Debuffs.ToDictionary(r => r.Name,k=>k.Stacks);
+            // Several casters can apply the same debuff; key on name, keep the highest stack count.
+            var debuffs = p.Debuffs
+                .GroupBy(r => r.Name)
+                .ToDictionary(g => g.Key, g => g.Max(e => e.Stacks));
 
             foreach (var d in DebuffList)
             {
