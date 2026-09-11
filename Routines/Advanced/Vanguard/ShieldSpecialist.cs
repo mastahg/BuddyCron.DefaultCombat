@@ -84,7 +84,7 @@ namespace DefaultCombat.Routines
                     //Low cells -- free / procced casts only until energy regenerates
                     new Decorator(ret => Core.Player.EnergyPercent <= 40,
                         new PrioritySelector(
-                            Spell.Cast("Ion Storm", ret => Core.Player.HasBuff("Pulse Engine") && Core.Player.Target.Distance <= 1f),
+                            Spell.Cast("Ion Storm", ret => Core.Player.HasBuff("Pulse Engine") && Core.Player.Target.EdgeDistance <= 1f),
                             Spell.Cast("Ion Pulse", ret => Core.Player.HasBuff("Static Surge")),
                             Spell.Cast("Hammer Shot")
                             )),
@@ -94,7 +94,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Stockstrike"),
                     Spell.Cast("High Impact Bolt"),
                     Spell.Cast("Ion Storm",
-                        ret => (Core.Player.HasBuff("Pulse Engine") || Core.Player.Level < 50) && Core.Player.Target.Distance <= 1f),
+                        ret => (Core.Player.HasBuff("Pulse Engine") || Core.Player.Level < 50) && Core.Player.Target.EdgeDistance <= 1f),
                     Spell.Cast("Shoulder Cannon", ret => Core.Player.HasBuff("Shoulder Cannon") && Core.Player.Target.StrongOrGreater()),
 
                     //Fillers

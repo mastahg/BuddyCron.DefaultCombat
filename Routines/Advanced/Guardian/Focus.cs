@@ -57,8 +57,8 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
-                    Spell.Cast("Saber Throw", ret => Core.Player.Target.Distance > .4f && Core.Player.Target.Distance <= 3f),
+                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
+                    Spell.Cast("Saber Throw", ret => Core.Player.Target.EdgeDistance > .4f && Core.Player.Target.EdgeDistance <= 3f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -76,7 +76,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Focused Burst", ret => Core.Player.HasBuff("Felling Blow")),
                     Spell.Cast("Force Sweep",
                         ret => (Core.Player.HasBuff("Felling Blow") || !AbilityManager.HasAbility("Focused Burst")) &&
-                               Core.Player.Target.Distance <= 0.5f),
+                               Core.Player.Target.EdgeDistance <= 0.5f),
 
                     //Force Lash / Focused Vision windows
                     Spell.Cast("Concentrated Slice"),
@@ -107,10 +107,10 @@ namespace DefaultCombat.Routines
                         //Force Sweep is the AoE payoff - only spend it with the procs up
                         Spell.Cast("Force Exhaustion", ret => !Core.Player.HasBuff("Singularity")),
                         Spell.Cast("Zealous Leap"),
-                        Spell.Cast("Force Sweep", ret => Core.Player.Target.Distance <= 0.5f),
+                        Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
                         Spell.Cast("Blade Storm"),
                         Spell.Cast("Blade Barrage"),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.Distance <= 0.5f),
+                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
                         Spell.Cast("Sundering Strike", ret => Core.Player.ActionPoints <= 5)
                         ));
             }

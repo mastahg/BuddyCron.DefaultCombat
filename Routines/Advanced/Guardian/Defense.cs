@@ -57,8 +57,8 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
-                    Spell.Cast("Saber Throw", ret => Core.Player.Target.Distance > .4f && Core.Player.Target.Distance <= 3f),
+                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
+                    Spell.Cast("Saber Throw", ret => Core.Player.Target.EdgeDistance > .4f && Core.Player.Target.EdgeDistance <= 3f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -78,8 +78,8 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Blade Storm"),
                     Spell.Cast("Dispatch", ret => Core.Player.Target.HealthPercent <= 30),
                     Spell.Cast("Blade Barrage"),
-                    Spell.Cast("Hilt Bash", ret => !Core.Player.Target.IsStunned && !Core.Player.Target.BossOrGreater() && Core.Player.Target.Distance <= 0.4f),
-                    Spell.Cast("Force Sweep", ret => Core.Player.Target.Distance <= 0.5f),
+                    Spell.Cast("Hilt Bash", ret => !Core.Player.Target.IsStunned && !Core.Player.Target.BossOrGreater() && Core.Player.Target.EdgeDistance <= 0.4f),
+                    Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
 
                     //Fillers
                     Spell.Cast("Saber Throw", ret => Core.Player.ActionPoints >= 3),
@@ -99,8 +99,8 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Warding Strike", ret => !Core.Player.HasBuff("Warding Strike")),
                         Spell.Cast("Guardian Slash", ret => Core.Player.HasBuff("Warding Strike") || Core.Player.Level < 30),
                         Spell.Cast("Blade Storm"),
-                        Spell.Cast("Force Sweep", ret => Core.Player.Target.Distance <= 0.5f),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.Distance <= 0.5f),
+                        Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
                         Spell.Cast("Blade Barrage")
                         ));
             }

@@ -58,7 +58,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -75,7 +75,7 @@ namespace DefaultCombat.Routines
                         ret => Core.Player.ActionPoints >= 3 &&
                                (!Core.Player.HasBuff("Massacre") || Core.Player.BuffTimeLeft("Massacre") <= 2)),
                     Spell.Cast("Ferocity",
-                        ret => Core.Player.Target.Distance <= Distance.Melee &&
+                        ret => Core.Player.Target.EdgeDistance <= Distance.Melee &&
                                (Core.Player.HasBuff("Massacre") || Core.Player.Level < 30)),
 
                     //Spend the window on the hardest hitters, in guide order
@@ -86,7 +86,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Devastating Blast"),
 
                     //Dual Saber Throw on cooldown -- damage plus rage
-                    Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
 
                     //Ravage is free, so it is the better filler while Berserk is up or when rage-starved
                     Spell.Cast("Ravage", ret => Core.Player.HasBuff("Berserk") || Core.Player.ActionPoints < 3),
@@ -109,8 +109,8 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
                         //These out-damage Sweeping Slash at any target count, so they stay on top
-                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.Distance <= 1f),
-                        Spell.Cast("Ferocity", ret => Core.Player.Target.Distance <= Distance.MeleeAoE),
+                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
+                        Spell.Cast("Ferocity", ret => Core.Player.Target.EdgeDistance <= Distance.MeleeAoE),
                         Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8),
 
                         //Sweeping Slash beats the single-target fillers from 2 targets up

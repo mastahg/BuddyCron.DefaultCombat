@@ -68,7 +68,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -93,13 +93,13 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Dispatch", ret => Core.Player.Target.HealthPercent <= 30),
 
                     //Mind Sear makes the next Twin Saber Throw hit twice as hard and resets its cooldown
-                    Spell.Cast("Twin Saber Throw", ret => Core.Player.HasBuff("Mind Sear") && Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Twin Saber Throw", ret => Core.Player.HasBuff("Mind Sear") && Core.Player.Target.EdgeDistance <= 1f),
 
                     //Fillers -- Blade Barrage is free, so it comes before the focus spenders
                     Spell.Cast("Blade Barrage"),
                     Spell.Cast("Slash", ret => Core.Player.ActionPoints >= 6),
                     Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8),
-                    Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
 
                     //Never stall -- free basic attack that builds focus
                     Spell.Cast("Strike")
@@ -118,7 +118,7 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Force Melt",
                             ret => !AbilityManager.HasAbility("Overload Saber") || !Core.Player.HasBuff("Overload Saber") ||
                                    Core.Player.Target.DebuffCount("Burning (Overload Saber)") >= 2),
-                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
                         Spell.Cast("Force Sweep"),
                         Spell.Cast("Merciless Slash"),
                         Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5),

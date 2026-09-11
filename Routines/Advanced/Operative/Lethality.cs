@@ -80,7 +80,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Holotraverse", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance > .4f),
+                    Spell.Cast("Holotraverse", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance > .4f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),

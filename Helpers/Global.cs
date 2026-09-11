@@ -22,10 +22,12 @@ namespace DefaultCombat.Helpers
         public const int CellMinimum = 8;
     }
 
-    /// <summary>Range thresholds (game distance units) used by rotations and targeting.</summary>
+    /// <summary>Range thresholds (game distance units) used by rotations and targeting. Ability
+    /// ranges are compared against <see cref="BuddyCron.Objects.HeroCharacter.EdgeDistance"/>, the
+    /// distance to the target's hit edge, which is the metric the game validates casts with.</summary>
     public class Distance
     {
-        /// <summary>Melee ability range.</summary>
+        /// <summary>Melee ability range, from the target's hit edge.</summary>
         public const float Melee = 0.4f;
         /// <summary>Radius to look for extra targets around a melee AoE.</summary>
         public const float MeleeAoE = 0.8f;

@@ -63,7 +63,7 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     //Gap closer. Phantom Stride also grants Conspirator's Cloak, so the opener
                     //naturally lands a free, full damage Maul right after the stride.
-                    Spell.Cast("Phantom Stride", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Phantom Stride", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),

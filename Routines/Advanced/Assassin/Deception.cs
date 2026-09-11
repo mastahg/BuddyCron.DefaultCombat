@@ -57,8 +57,8 @@ namespace DefaultCombat.Routines
             {
                 return new PrioritySelector(
                     //Stealth opener / gap closer
-                    Spell.Cast("Phantom Stride", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
-                    Spell.Cast("Force Speed", ret => CombatHotkeys.EnableCharge && Core.Player.IsMoving && Core.Player.Target.Distance > 1f),
+                    Spell.Cast("Phantom Stride", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
+                    Spell.Cast("Force Speed", ret => CombatHotkeys.EnableCharge && Core.Player.IsMoving && Core.Player.Target.EdgeDistance > 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),

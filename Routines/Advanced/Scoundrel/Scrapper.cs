@@ -81,7 +81,7 @@ namespace DefaultCombat.Routines
             {
                 return new PrioritySelector(
                     //Gap closer (ability tree choice, lvl 73)
-                    Spell.Cast("Trick Move", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance > .4f),
+                    Spell.Cast("Trick Move", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance > .4f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),

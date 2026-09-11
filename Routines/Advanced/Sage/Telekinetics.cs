@@ -104,7 +104,7 @@ namespace DefaultCombat.Routines
                     //Saber Strike is the free attack so the rotation can never stall
                     Spell.Cast("Telekinetic Burst"),
                     Spell.Cast("Disturbance"),
-                    Spell.Cast("Saber Strike", ret => Core.Player.Target.Distance <= Distance.Melee)
+                    Spell.Cast("Saber Strike", ret => Core.Player.Target.EdgeDistance <= Distance.Melee)
                     );
             }
         }

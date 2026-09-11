@@ -57,8 +57,8 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
-                    Spell.Cast("Saber Throw", ret => Core.Player.Target.Distance > .4f && Core.Player.Target.Distance <= 3f),
+                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
+                    Spell.Cast("Saber Throw", ret => Core.Player.Target.EdgeDistance > .4f && Core.Player.Target.EdgeDistance <= 3f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -76,7 +76,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Plasma Brand"),
                     Spell.Cast("Blade Storm", ret => Core.Player.BuffCount("Force Rush") >= 2 || Core.Player.Level < 40),
                     Spell.Cast("Blade Barrage"),
-                    Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.Distance <= 0.5f),
+                    Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.EdgeDistance <= 0.5f),
 
                     //Whirling Blade replaces Dispatch for Vigilance; Keening makes it free and usable
                     //at any health. Dispatch is the pre-replacement (low level) fallback.
@@ -105,9 +105,9 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Overhead Slash"),
                         Spell.Cast("Plasma Brand"),
                         Spell.Cast("Blade Storm"),
-                        Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.Distance <= 0.5f),
-                        Spell.Cast("Force Sweep", ret => Core.Player.Target.Distance <= 0.5f),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.Distance <= 0.5f),
+                        Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
                         Spell.Cast("Blade Barrage")
                         ));
             }

@@ -61,7 +61,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -86,7 +86,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Dispatch", ret => Core.Player.Target.HealthPercent <= 30),
                     Spell.Cast("Blade Storm",
                         ret => (Core.Player.HasBuff("Momentum") || !AbilityManager.HasAbility("Zealous Leap")) &&
-                               Core.Player.Target.Distance <= 1f),
+                               Core.Player.Target.EdgeDistance <= 1f),
 
                     //Focused Burst on cooldown even without a proc
                     Spell.Cast("Focused Burst"),
@@ -95,7 +95,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Blade Barrage"),
                     Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8),
                     Spell.Cast("Slash", ret => Core.Player.ActionPoints >= 6),
-                    Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
 
                     //Never stall -- free basic attack that builds focus
                     Spell.Cast("Strike")
@@ -116,7 +116,7 @@ namespace DefaultCombat.Routines
                                    !AbilityManager.HasAbility("Focused Burst")),
                         Spell.Cast("Zealous Leap", ret => CombatHotkeys.EnableCharge),
                         Spell.Cast("Force Sweep"),
-                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
                         Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5),
                         Spell.Cast("Blade Barrage"),
                         Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8)

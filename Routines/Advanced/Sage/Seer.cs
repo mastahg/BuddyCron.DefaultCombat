@@ -87,7 +87,7 @@ namespace DefaultCombat.Routines
                             )),
 
                     //Free filler so the rotation can never stall (and never starves the heals)
-                    Spell.Cast("Saber Strike", ret => Core.Player.Target.Distance <= Distance.Melee)
+                    Spell.Cast("Saber Strike", ret => Core.Player.Target.EdgeDistance <= Distance.Melee)
                     );
             }
         }

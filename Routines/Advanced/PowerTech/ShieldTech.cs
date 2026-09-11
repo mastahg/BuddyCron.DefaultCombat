@@ -57,7 +57,7 @@ namespace DefaultCombat.Routines
                     //live-verified: 60s cd, off-GCD). "Power Yield" is Advanced Prototype's and
                     //"Thermal Yield" is Pyrotech's -- neither is granted here.
                     Spell.Buff("Energy Yield", ret => Core.Player.InCombat && Core.Player.HealthPercent <= 70),
-                    Spell.CastOnGround("Oil Slick", ret => Core.Player.HealthPercent <= 75 && Core.Player.Target.Distance <= 0.8f),
+                    Spell.CastOnGround("Oil Slick", ret => Core.Player.HealthPercent <= 75 && Core.Player.Target.EdgeDistance <= 0.8f),
                     Spell.Buff("Kolto Overload", ret => Core.Player.HealthPercent <= 30),
                     Spell.Buff("Unity", ret => Core.Player.Companion != null && Core.Player.HealthPercent <= 15),
 
@@ -88,7 +88,7 @@ namespace DefaultCombat.Routines
                     //Overheated -- free / procced casts only until heat bleeds off
                     new Decorator(ret => Core.Player.EnergyPercent <= 40,
                         new PrioritySelector(
-                            Spell.Cast("Firestorm", ret => Core.Player.HasBuff("Flame Engine") && Core.Player.Target.Distance <= 1f),
+                            Spell.Cast("Firestorm", ret => Core.Player.HasBuff("Flame Engine") && Core.Player.Target.EdgeDistance <= 1f),
                             Spell.Cast("Flame Burst", ret => Core.Player.HasBuff("Flame Surge")),
                             Spell.Cast("Rapid Shots")
                             )),
@@ -97,7 +97,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Rocket Punch"),
                     Spell.Cast("Rail Shot"),
                     Spell.Cast("Firestorm",
-                        ret => (Core.Player.HasBuff("Flame Engine") || Core.Player.Level < 50) && Core.Player.Target.Distance <= 1f),
+                        ret => (Core.Player.HasBuff("Flame Engine") || Core.Player.Level < 50) && Core.Player.Target.EdgeDistance <= 1f),
                     Spell.Cast("Shoulder Cannon", ret => Core.Player.HasBuff("Shoulder Cannon") && Core.Player.Target.StrongOrGreater()),
 
                     //Fillers

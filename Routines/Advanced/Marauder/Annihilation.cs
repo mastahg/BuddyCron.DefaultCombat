@@ -68,7 +68,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -94,7 +94,7 @@ namespace DefaultCombat.Routines
                                Core.Player.Target.DebuffTimeLeft("Bleeding (Rupture)") <= 2),
 
                     //Pulverize makes Dual Saber Throw free + resets its cooldown.
-                    Spell.Cast("Dual Saber Throw", ret => Core.Player.HasBuff("Pulverize") && Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Dual Saber Throw", ret => Core.Player.HasBuff("Pulverize") && Core.Player.Target.EdgeDistance <= 1f),
                     Spell.Cast("Vicious Throw", ret => Core.Player.Target.HealthPercent <= 30),
                     Spell.Cast("Ravage", ret => Core.Player.HasBuff("Berserk")),
 
@@ -104,9 +104,9 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8),
 
                     //Low level: no Pulverize passive yet, so Dual Saber Throw is just a rage builder
-                    Spell.Cast("Dual Saber Throw", ret => Core.Player.Level < 40 && Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Dual Saber Throw", ret => Core.Player.Level < 40 && Core.Player.Target.EdgeDistance <= 1f),
                     Spell.Cast("Force Scream",
-                        ret => Core.Player.Target.Distance > Distance.Melee && Core.Player.Target.Distance <= 1f),
+                        ret => Core.Player.Target.EdgeDistance > Distance.Melee && Core.Player.Target.EdgeDistance <= 1f),
                     Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.ActionPoints <= 8),
 
                     //Never stall -- free basic attack
@@ -127,7 +127,7 @@ namespace DefaultCombat.Routines
                                     Core.Player.Target.DebuffCount("Bleeding (Deadly Saber)") >= 2) &&
                                    !Core.Player.Target.HasMyDebuff("Force Rend")),
                         Spell.Cast("Rupture", ret => !Core.Player.Target.HasMyDebuff("Bleeding (Rupture)")),
-                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
                         Spell.Cast("Smash"),
                         Spell.Cast("Annihilate"),
                         Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5),

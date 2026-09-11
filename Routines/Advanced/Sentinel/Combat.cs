@@ -60,7 +60,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Force Leap", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -77,7 +77,7 @@ namespace DefaultCombat.Routines
                         ret => Core.Player.ActionPoints >= 3 &&
                                (!Core.Player.HasBuff("Blade Rush") || Core.Player.BuffTimeLeft("Blade Rush") <= 2)),
                     Spell.Cast("Precision",
-                        ret => Core.Player.Target.Distance <= Distance.Melee &&
+                        ret => Core.Player.Target.EdgeDistance <= Distance.Melee &&
                                (Core.Player.HasBuff("Blade Rush") || Core.Player.Level < 30)),
 
                     //Spend the window on the hardest hitters. Opportune Attack autocrits Clashing Blast,
@@ -90,7 +90,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Blade Storm", ret => Core.Player.HasBuff("Precision") && Core.Player.ActionPoints >= 6),
 
                     //Twin Saber Throw on cooldown -- free damage
-                    Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
 
                     //Blade Barrage is free, so it is the better filler while Zen is up or focus-starved
                     Spell.Cast("Blade Barrage", ret => Core.Player.HasBuff("Zen") || Core.Player.ActionPoints < 3),
@@ -113,8 +113,8 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
                         //These out-damage Cyclone Slash at any target count, so they stay on top
-                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.Distance <= 1f),
-                        Spell.Cast("Precision", ret => Core.Player.Target.Distance <= Distance.MeleeAoE),
+                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
+                        Spell.Cast("Precision", ret => Core.Player.Target.EdgeDistance <= Distance.MeleeAoE),
                         Spell.Cast("Force Sweep"),
                         Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8),
 

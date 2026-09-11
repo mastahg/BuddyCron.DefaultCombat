@@ -53,8 +53,8 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
-                    Spell.Cast("Saber Throw", ret => !RotationRuntime.MovementDisabled && Core.Player.Target.Distance > .4f && Core.Player.Target.Distance <= 3f),
+                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
+                    Spell.Cast("Saber Throw", ret => !RotationRuntime.MovementDisabled && Core.Player.Target.EdgeDistance > .4f && Core.Player.Target.EdgeDistance <= 3f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -73,7 +73,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Force Scream",
                         ret => Core.Player.BuffCount("Savagery") >= 2 || Core.Player.Level < 40 || !Core.Player.Target.BossOrGreater()),
                     Spell.Cast("Ravage"),
-                    Spell.Cast("Vengeful Slam", ret => Core.Player.Target.Distance <= 0.5f),
+                    Spell.Cast("Vengeful Slam", ret => Core.Player.Target.EdgeDistance <= 0.5f),
 
                     //Execute: free/anytime with the Destroyer proc, otherwise sub-30%.
                     Spell.Cast("Hew", ret => Core.Player.HasBuff("Destroyer") || Core.Player.Target.HealthPercent <= 30),
@@ -97,8 +97,8 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Impale"),
                         Spell.Cast("Shatter"),
                         Spell.Cast("Force Scream"),
-                        Spell.Cast("Vengeful Slam", ret => Core.Player.Target.Distance <= 0.5f),
-                        Spell.Cast("Smash", ret => Core.Player.Target.Distance <= 0.5f),
+                        Spell.Cast("Vengeful Slam", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        Spell.Cast("Smash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
                         Spell.Cast("Ravage"),
                         Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6)
                         ));

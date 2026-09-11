@@ -99,7 +99,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Telekinetic Throw", ret => Core.Player.BuffCount("Presence of Mind") < 4),
                     Spell.Cast("Disturbance"),
                     Spell.Cast("Project"),
-                    Spell.Cast("Saber Strike", ret => Core.Player.Target.Distance <= Distance.Melee)
+                    Spell.Cast("Saber Strike", ret => Core.Player.Target.EdgeDistance <= Distance.Melee)
                     );
             }
         }

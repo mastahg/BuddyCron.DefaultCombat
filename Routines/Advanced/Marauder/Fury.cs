@@ -61,7 +61,7 @@ namespace DefaultCombat.Routines
             get
             {
                 return new PrioritySelector(
-                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Force Charge", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
@@ -84,7 +84,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Vicious Throw", ret => Core.Player.Target.HealthPercent <= 30),
                     Spell.Cast("Force Scream",
                         ret => (Core.Player.HasBuff("Battle Cry") || !AbilityManager.HasAbility("Obliterate")) &&
-                               Core.Player.Target.Distance <= 1f),
+                               Core.Player.Target.EdgeDistance <= 1f),
 
                     //Raging Burst on cooldown even without a proc
                     Spell.Cast("Raging Burst"),
@@ -93,7 +93,7 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Ravage"),
                     Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8),
                     Spell.Cast("Vicious Slash", ret => Core.Player.ActionPoints >= 6),
-                    Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                    Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
 
                     //Never stall -- free basic attack
                     Spell.Cast("Assault")
@@ -114,7 +114,7 @@ namespace DefaultCombat.Routines
                                    !AbilityManager.HasAbility("Raging Burst")),
                         Spell.Cast("Obliterate", ret => CombatHotkeys.EnableCharge),
                         Spell.Cast("Smash"),
-                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.Distance <= 1f),
+                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
                         Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5),
                         Spell.Cast("Ravage"),
                         Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8)

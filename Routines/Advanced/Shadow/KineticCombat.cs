@@ -63,7 +63,7 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     //Gap closer. Shadow Stride also grants Shadow Wrap, so the opener naturally
                     //lands a free, full damage Shadow Strike right after the stride.
-                    Spell.Cast("Shadow Stride", ret => CombatHotkeys.EnableCharge && Core.Player.Target.Distance >= 1f),
+                    Spell.Cast("Shadow Stride", ret => CombatHotkeys.EnableCharge && Core.Player.Target.EdgeDistance >= 1f),
 
                     //Movement
                     CombatMovement.CloseDistance(Distance.Melee),
