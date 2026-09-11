@@ -61,8 +61,7 @@ namespace DefaultCombat.Routines
                     new Decorator(ret => RotationRuntime.IsHealer, AreaOfEffect),
                     Spell.Buff(Core.Player.SelfBuffName()),
                     Buffs,
-                    Rest.HandleRest,
-                    Scavenge.ScavengeCorpse));
+                    Rest.HandleRest));
 
             _combat = new Decorator(
                 ret => !CombatHotkeys.PauseRotation,
