@@ -31,7 +31,7 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     Spell.Buff("Force Valor"),
                     //Always re-stealth out of combat so we can open with Shadow Stride + Vaulting Slash
-					Spell.Buff("Stealth", ret => !Rest.KeepResting() && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
+					Spell.Buff("Stealth", ret => !Rest.IsRestPending && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
                     );
             }
         }

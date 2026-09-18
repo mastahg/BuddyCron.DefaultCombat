@@ -31,7 +31,7 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     Spell.Buff("Mark of Power"),
                     //Always re-stealth out of combat so we can open with Phantom Stride + Reaping Strike
-					Spell.Buff("Stealth", ret => !Rest.KeepResting() && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
+					Spell.Buff("Stealth", ret => !Rest.IsRestPending && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
                     );
             }
         }

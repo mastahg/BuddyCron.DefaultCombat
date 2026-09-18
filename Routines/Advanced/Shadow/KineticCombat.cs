@@ -32,7 +32,7 @@ namespace DefaultCombat.Routines
                     Spell.Buff("Force Valor"),
                     //Kinetic Combat should always open from Stealth: Shadow Stride out of stealth
                     //grants Shadow Wrap (free, full damage Shadow Strike) and Shadow Protection stacks.
-                    Spell.Buff("Stealth", ret => !Rest.KeepResting() && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
+                    Spell.Buff("Stealth", ret => !Rest.IsRestPending && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
                     );
             }
         }

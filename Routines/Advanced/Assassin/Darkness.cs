@@ -32,7 +32,7 @@ namespace DefaultCombat.Routines
                     Spell.Buff("Mark of Power"),
                     //Darkness should always open from Stealth: leaving stealth instantly grants
                     //4 stacks of Dark Protection (Conspirator's Cloak passive).
-                    Spell.Buff("Stealth", ret => !Rest.KeepResting() && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
+                    Spell.Buff("Stealth", ret => !Rest.IsRestPending && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
                     );
             }
         }

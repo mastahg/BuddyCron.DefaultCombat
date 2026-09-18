@@ -39,7 +39,7 @@ namespace DefaultCombat.Routines
             {
                 return new PrioritySelector(
                     Spell.Buff("Coordination"),
-					Spell.Buff("Stealth", ret => !Rest.KeepResting() && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
+					Spell.Buff("Stealth", ret => !Rest.IsRestPending && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
                     );
             }
         }

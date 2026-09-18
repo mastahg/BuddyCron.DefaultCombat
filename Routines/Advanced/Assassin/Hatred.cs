@@ -31,7 +31,7 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     Spell.Buff("Mark of Power"),
                     //Re-stealth out of combat: the opener is Phantom Stride (free Raze) into the DoTs
-					Spell.Buff("Stealth", ret => !Rest.KeepResting() && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
+					Spell.Buff("Stealth", ret => !Rest.IsRestPending && !RotationRuntime.MovementDisabled && !Core.Player.IsMounted)
                     );
             }
         }
