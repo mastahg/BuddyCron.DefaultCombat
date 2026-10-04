@@ -1,6 +1,7 @@
 // Copyright (C) 2011-2018 Bossland GmbH
 // See the file LICENSE for the source code's detailed license
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -328,6 +329,51 @@ namespace DefaultCombat.Behaviors
         public static bool CheckDpsAoe(int minMobs, float distance, Vector3 center)
         {
             return PointsAroundPoint(center, EnemyPoints, distance) >= minMobs;
+        }
+
+        /// <summary>True when enough tracked enemies stand inside a cone in front of the player to
+        /// justify a frontal-cone AoE: within <paramref name="range"/> of the player and within
+        /// half of <paramref name="arcDegrees"/> (the full cone width) of the player's facing.</summary>
+        public static bool ShouldFrontalConeAoe(float range, float arcDegrees)
+        {
+            var forward = Core.Player.Forward;
+            if (forward == Vector3.Zero)
+                return false;
+
+            var origin = Core.Player.Location;
+            var maxDistance = range * range;
+            var minCos = MathF.Cos(arcDegrees * 0.5f * MathF.PI / 180f);
+            var inCone = EnemyPoints.Count(p => IsInCone(p, origin, forward, maxDistance, minCos));
+            return inCone >= AoedpsCountNeeded;
+        }
+
+        /// <summary>True when <paramref name="unit"/> stands inside a cone in front of the player:
+        /// within <paramref name="range"/> of the player and within half of
+        /// <paramref name="arcDegrees"/> (the full cone width) of the player's facing. False for a
+        /// null unit.</summary>
+        public static bool InFrontalCone(HeroCharacter unit, float range, float arcDegrees)
+        {
+            if (unit == null)
+                return false;
+
+            var forward = Core.Player.Forward;
+            if (forward == Vector3.Zero)
+                return false;
+
+            var minCos = MathF.Cos(arcDegrees * 0.5f * MathF.PI / 180f);
+            return IsInCone(unit.Location, Core.Player.Location, forward, range * range, minCos);
+        }
+
+        private static bool IsInCone(Vector3 point, Vector3 origin, Vector3 forward, float maxDistanceSqr, float minCos)
+        {
+            if (point.DistanceSqr(origin) > maxDistanceSqr)
+                return false;
+
+            // Facing is yaw-only, so compare headings in the ground plane; a point on top of us has
+            // no heading and is inside every cone.
+            var planar = new Vector3(point.X - origin.X, 0f, point.Z - origin.Z);
+            var length = planar.Length();
+            return length < 0.0001f || Vector3.Dot(planar / length, forward) >= minCos;
         }
 
         private static int PointsAroundPoint(Vector3 pt, List<Vector3> l, float dist)

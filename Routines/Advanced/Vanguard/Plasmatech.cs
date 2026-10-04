@@ -21,6 +21,13 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Plasmatech : RotationBase
     {
+        // Ion Wave's damage lands through an AoE Cone target override: Direction Forward, Distance
+        // 10.1 m, Angle 45. Angle is read as the full cone width, the same full-angle convention
+        // ablTargetArc uses (270/360) — the conservative reading. Reach stays just under 10.1 m so a
+        // pulse of movement cannot carry a counted enemy out.
+        private const float IonWaveReach = 1.0f;
+        private const float IonWaveArc = 45f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Plasmatech;
 
         public override string Name => "Vanguard Plasmatech";
@@ -81,7 +88,9 @@ namespace DefaultCombat.Routines
                     //Shockstrike is the defining short-cooldown strike and helps establish the proc
                     //state consumed by Ion Wave, Plasma Flare, and High Impact Bolt.
                     Spell.Cast("Shockstrike"),
-                    Spell.Cast("Ion Wave", ret => Core.Player.BuffCount("Pulse Generator") >= 2 || Core.Player.Level < 50),
+                    //Ion Wave is self-cast, so the engine never range-checks the target: keep it to its 10 m reach
+                    //and the target inside the forward cone.
+                    Spell.Cast("Ion Wave", ret => (Core.Player.BuffCount("Pulse Generator") >= 2 || Core.Player.Level < 50) && Core.Player.Target.EdgeDistance <= 1f && Targeting.InFrontalCone(Core.Player.Target, IonWaveReach, IonWaveArc)),
                     Spell.Cast("Plasma Flare", ret => Core.Player.HasBuff("Overcharged Plasma") || Core.Player.Level < 50),
                     //High Impact Bolt is only usable on a target suffering periodic damage (or CC'd) unless the
                     //caster has High Friction Bolts (Tactics only). Plasmatech's two DoTs are the only burns we
@@ -115,7 +124,8 @@ namespace DefaultCombat.Routines
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
-                            Spell.Cast("Ion Wave"),
+                            //Forward cone, not a point-blank AoE: enemies around us only count when they stand inside it.
+                            Spell.Cast("Ion Wave", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldFrontalConeAoe(IonWaveReach, IonWaveArc)),
                             Spell.Cast("Explosive Surge", ret => Core.Player.HasBuff("Plasma Barrage")),
                             //(Flak Shell is granted to Tactics and Shield Specialist only -- not Plasmatech.)
                             Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50)

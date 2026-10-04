@@ -22,6 +22,13 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Pyrotech : RotationBase
     {
+        // Searing Wave's damage lands through an AoE Cone target override (abl.bounty_hunter.searing_wave
+        // effect 1): Direction Forward, Distance 10.1 m, Angle 45. Angle is read as the full cone width,
+        // the same full-angle convention ablTargetArc uses (270/360) — the conservative reading. Reach
+        // stays just under 10.1 m so a pulse of movement cannot carry a counted enemy out.
+        private const float SearingWaveReach = 1.0f;
+        private const float SearingWaveArc = 45f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.FirebugPyrotech;
 
         public override string Name => "Powertech Pyrotech";
@@ -81,7 +88,9 @@ namespace DefaultCombat.Routines
                     //Flaming Fist is the defining short-cooldown strike and helps establish the proc
                     //state consumed by Searing Wave, Immolate, and Rail Shot.
                     Spell.Cast("Flaming Fist"),
-                    Spell.Cast("Searing Wave", ret => Core.Player.BuffCount("Superheated Flamethrower") >= 2 || Core.Player.Level < 50),
+                    //Searing Wave is self-cast, so the engine never range-checks the target: keep it to its 10 m reach
+                    //and the target inside the forward cone.
+                    Spell.Cast("Searing Wave", ret => (Core.Player.BuffCount("Superheated Flamethrower") >= 2 || Core.Player.Level < 50) && Core.Player.Target.EdgeDistance <= 1f && Targeting.InFrontalCone(Core.Player.Target, SearingWaveReach, SearingWaveArc)),
                     Spell.Cast("Immolate", ret => Core.Player.HasBuff("Consuming Flames") || Core.Player.Level < 50),
                     //Rail Shot is only usable on a target suffering periodic damage (or CC'd) unless the
                     //caster has Prototype Rail (Advanced Prototype only). Pyrotech's two DoTs are the only
@@ -115,7 +124,8 @@ namespace DefaultCombat.Routines
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
                             CombatMovement.CloseDistance(Distance.MeleeAoE),
-                            Spell.Cast("Searing Wave"),
+                            //Forward cone, not a point-blank AoE: enemies around us only count when they stand inside it.
+                            Spell.Cast("Searing Wave", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldFrontalConeAoe(SearingWaveReach, SearingWaveArc)),
                             Spell.Cast("Flame Sweep", ret => Core.Player.HasBuff("Flame Barrage")),
                             //(Shatter Slug is granted to Advanced Prototype and Shield Tech only -- not Pyrotech.)
                             Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50)
