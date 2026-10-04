@@ -59,8 +59,9 @@ namespace DefaultCombat.Helpers
             if (companion == null || !companion.IsDead)
                 return false;
 
-            // don't clip whatever is already casting (the old Spell.WaitForCast guard)
-            if (Core.Player.IsCasting)
+            // don't clip whatever is already casting (the old Spell.WaitForCast guard) — but an
+            // open loot window is a channel too and would hold this until it closes
+            if (Core.Player.IsCasting && !Core.Player.IsLooting)
                 return true;
 
             if (companion.Distance > 0.3f)
