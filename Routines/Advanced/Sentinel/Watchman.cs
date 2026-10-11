@@ -118,10 +118,13 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Force Melt",
                             ret => !AbilityManager.HasAbility("Overload Saber") || !Core.Player.HasBuff("Overload Saber") ||
                                    Core.Player.Target.DebuffCount("Burning (Overload Saber)") >= 2),
-                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
-                        Spell.Cast("Force Sweep"),
+                        //Twin Saber Throw is a 2.5 m-wide line through the target; count the pack hugging it.
+                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldTargetAoe(0.25f)),
+                        //Force Sweep is a 5 m sphere around us, not the target.
+                        Spell.Cast("Force Sweep", ret => Targeting.ShouldPointBlankAoe(0.5f)),
                         Spell.Cast("Merciless Slash"),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5),
+                        //Cyclone Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Blade Barrage"),
                         Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8)
                         ));

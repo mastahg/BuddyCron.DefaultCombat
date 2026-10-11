@@ -20,6 +20,12 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Virulence : RotationBase
     {
+        // Orbital Strike and Suppressive Fire: ground AoE, 8 m radius, 30 m max range.
+        private const float GroundAoeRadius = 0.8f;
+        private const float GroundAoeRange = 3.0f;
+        // Corrosive Grenade and Fragmentation Grenade splash 5 m around the target.
+        private const float GrenadeSplashRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Virulence;
 
         public override string Name => "Sniper Virulence";
@@ -111,11 +117,15 @@ namespace DefaultCombat.Routines
                         Spell.Buff("Crouch", ret => !Core.Player.IsInCover() && !Core.Player.IsMoving),
                         //Corrosive Grenade spreads Corrosive Dart, so land the dart first
                         Spell.DoT("Corrosive Dart", "Corrosive Dart"),
-                        Spell.DoT("Corrosive Grenade", "Corrosive Grenade"),
+                        //Corrosive Grenade only reaches 5 m around the target.
+                        Spell.DoT("Corrosive Grenade", "Corrosive Grenade", 0, ret => Targeting.ShouldTargetAoe(GrenadeSplashRadius)),
                         //Ability tree choice (lvl 68) for Virulence -- skipped when not chosen
-                        Spell.CastOnGround("Orbital Strike", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 60),
-                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 50),
-                        Spell.CastOnGround("Suppressive Fire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30)
+                        //Orbital Strike is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Orbital Strike", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 60 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Fragmentation Grenade only splashes 5 m around the target.
+                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 50 && Targeting.ShouldTargetAoe(GrenadeSplashRadius)),
+                        //Suppressive Fire is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Suppressive Fire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius))
                         ));
             }
         }

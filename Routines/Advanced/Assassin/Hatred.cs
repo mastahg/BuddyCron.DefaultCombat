@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Hatred : RotationBase
     {
+        //Death Field is placed on the target's location and may only be placed within 10 m.
+        private const float DeathFieldRange = 1.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Hatred;
 
         public override string Name => "Assassin Hatred";
@@ -74,7 +77,8 @@ namespace DefaultCombat.Routines
                     //Raze finishes Eradicate's cooldown and makes it free - always spend it
                     Spell.Cast("Eradicate", ret => Core.Player.HasBuff("Raze")),
                     //Death Field on cooldown: it applies Overwhelmed (Mental) and boosts our DoT damage
-                    Spell.CastOnGround("Death Field"),
+                    //Death Field is a ground AoE at the target: it may only be placed within 10 m.
+                    Spell.CastOnGround("Death Field", ret => Core.Player.Target.Distance <= DeathFieldRange),
                     //Keep both 18s DoTs rolling
                     Spell.Cast("Creeping Terror",
                         ret => !Core.Player.Target.HasMyDebuff("Creeping Terror") || Core.Player.Target.DebuffTimeLeft("Creeping Terror") <= 3),
@@ -98,13 +102,15 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     new Decorator(ret => Targeting.ShouldAoe,
                         new PrioritySelector(
-                            Spell.CastOnGround("Death Field"),
+                            //Death Field is a 5 m sphere on the target, placed within 10 m.
+                            Spell.CastOnGround("Death Field", ret => Core.Player.Target.Distance <= DeathFieldRange && Targeting.ShouldTargetAoe(0.5f)),
                             Spell.Cast("Discharge", ret => !Core.Player.Target.HasMyDebuff("Discharge")),
                             Spell.Cast("Creeping Terror", ret => !Core.Player.Target.HasMyDebuff("Creeping Terror")),
-							Spell.Cast("Severing Slash"))),
+							//Severing Slash is a 5 m / 160 degree forward cone from us.
+							Spell.Cast("Severing Slash", ret => Targeting.ShouldFrontalConeAoe(0.5f, 160f)))),
                     new Decorator(ret => Targeting.ShouldPbaoe,
-                        //Lacerate is the AoE filler and spreads the DoTs
-                        Spell.Cast("Lacerate", ret => Core.Player.ForcePercent >= 40))
+                        //Lacerate is the AoE filler and spreads the DoTs. It is a 5 m sphere around us.
+                        Spell.Cast("Lacerate", ret => Core.Player.ForcePercent >= 40 && Targeting.ShouldPointBlankAoe(0.5f)))
                     );
             }
         }

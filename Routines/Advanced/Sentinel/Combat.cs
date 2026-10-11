@@ -113,13 +113,15 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
                         //These out-damage Cyclone Slash at any target count, so they stay on top
-                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
+                        //Twin Saber Throw is a 2.5 m-wide line through the target; count the pack hugging it.
+                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldTargetAoe(0.25f)),
                         Spell.Cast("Precision", ret => Core.Player.Target.EdgeDistance <= Distance.MeleeAoE),
-                        Spell.Cast("Force Sweep"),
+                        //Force Sweep is a 5 m sphere around us, not the target.
+                        Spell.Cast("Force Sweep", ret => Targeting.ShouldPointBlankAoe(0.5f)),
                         Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8),
 
-                        //Cyclone Slash beats the single-target fillers from 2 targets up
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5),
+                        //Cyclone Slash beats the single-target fillers from 2 targets up; it is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
 
                         Spell.Cast("Clashing Blast", ret => Core.Player.HasBuff("Opportune Attack") || Core.Player.Level < 30),
                         Spell.Cast("Dispatch",

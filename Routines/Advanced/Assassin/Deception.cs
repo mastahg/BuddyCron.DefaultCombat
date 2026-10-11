@@ -107,10 +107,12 @@ namespace DefaultCombat.Routines
                                 ret => Core.Player.BuffCount("Static Charge") >= 3 ||
                                        (Core.Player.BuffCount("Static Charge") == 0 &&
                                         AbilityManager.CanCast("Discharge", Core.Player.Target).Success)),
-							Spell.Cast("Severing Slash"))),
+							//Severing Slash is a 5 m / 160 degree forward cone from us.
+							Spell.Cast("Severing Slash", ret => Targeting.ShouldFrontalConeAoe(0.5f, 160f)))),
                     new Decorator(ret => Targeting.ShouldPbaoe,
-                        //Lacerate is the AoE filler and also builds Voltage for Ball Lightning
-                        Spell.Cast("Lacerate", ret => Core.Player.ForcePercent >= 40))
+                        //Lacerate is the AoE filler and also builds Voltage for Ball Lightning.
+                        //It is a 5 m sphere around us.
+                        Spell.Cast("Lacerate", ret => Core.Player.ForcePercent >= 40 && Targeting.ShouldPointBlankAoe(0.5f)))
                     );
             }
         }

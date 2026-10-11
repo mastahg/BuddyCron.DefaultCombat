@@ -127,10 +127,13 @@ namespace DefaultCombat.Routines
                                     Core.Player.Target.DebuffCount("Bleeding (Deadly Saber)") >= 2) &&
                                    !Core.Player.Target.HasMyDebuff("Force Rend")),
                         Spell.Cast("Rupture", ret => !Core.Player.Target.HasMyDebuff("Bleeding (Rupture)")),
-                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
-                        Spell.Cast("Smash"),
+                        //Dual Saber Throw is a 2.5 m-wide line through the target; count the pack hugging it.
+                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldTargetAoe(0.25f)),
+                        //Smash is a 5 m sphere around us, not the target.
+                        Spell.Cast("Smash", ret => Targeting.ShouldPointBlankAoe(0.5f)),
                         Spell.Cast("Annihilate"),
-                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5),
+                        //Sweeping Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Ravage"),
                         Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8)
                         ));

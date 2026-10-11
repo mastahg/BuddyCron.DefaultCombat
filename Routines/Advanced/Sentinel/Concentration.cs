@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Concentration : RotationBase
     {
+        // Force Sweep is a self-cast 5.1 m sphere around us (abl.jedi_knight.sweep).
+        private const float ForceSweepRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Concentration;
 
         public override string Name => "Sentinel Concentration";
@@ -111,13 +114,18 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         //Force Sweep is the AoE stand-in for Focused Burst and eats the same procs
                         Spell.Cast("Force Exhaustion", ret => !Core.Player.HasBuff("Singularity")),
+                        //Force Sweep is a 5 m sphere around us, not the target.
                         Spell.Cast("Force Sweep",
-                            ret => Core.Player.HasBuff("Singularity") || Core.Player.HasBuff("Felling Blow") ||
-                                   !AbilityManager.HasAbility("Focused Burst")),
-                        Spell.Cast("Zealous Leap", ret => CombatHotkeys.EnableCharge),
-                        Spell.Cast("Force Sweep"),
-                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5),
+                            ret => Targeting.ShouldPointBlankAoe(ForceSweepRadius) &&
+                                   (Core.Player.HasBuff("Singularity") || Core.Player.HasBuff("Felling Blow") ||
+                                    !AbilityManager.HasAbility("Focused Burst"))),
+                        //Zealous Leap splashes a 5 m sphere around the target.
+                        Spell.Cast("Zealous Leap", ret => CombatHotkeys.EnableCharge && Targeting.ShouldTargetAoe(0.5f)),
+                        Spell.Cast("Force Sweep", ret => Targeting.ShouldPointBlankAoe(ForceSweepRadius)),
+                        //Twin Saber Throw is a 2.5 m-wide line through the target; count the pack hugging it.
+                        Spell.Cast("Twin Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldTargetAoe(0.25f)),
+                        //Cyclone Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Cyclone Slash", ret => Core.Player.ActionPoints >= 5 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Blade Barrage"),
                         Spell.Cast("Zealous Strike", ret => Core.Player.ActionPoints <= 8)
                         ));

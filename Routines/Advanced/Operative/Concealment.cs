@@ -131,9 +131,12 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe && !HoldForOpener,
                     new PrioritySelector(
-                        Spell.Cast("Toxic Haze", ret => Core.Player.HasBuff("Tactical Advantage")),
-                        Spell.Cast("Noxious Knives"),
-                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent >= 60)
+                        //Toxic Haze is an 8 m sphere around us, not the target.
+                        Spell.Cast("Toxic Haze", ret => Core.Player.HasBuff("Tactical Advantage") && Targeting.ShouldPointBlankAoe(0.8f)),
+                        //Noxious Knives is a 10 m / 45 degree forward cone from us.
+                        Spell.Cast("Noxious Knives", ret => Targeting.ShouldFrontalConeAoe(1.0f, 45f)),
+                        //Fragmentation Grenade splashes 5 m around the target.
+                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent >= 60 && Targeting.ShouldTargetAoe(0.5f))
                     ));
             }
         }

@@ -21,6 +21,11 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class ShieldSpecialist : RotationBase
     {
+        // Ion Storm is self-cast and lands through an AoE Cone target override (abl.trooper.ion_storm):
+        // Direction Forward, Distance 10.1 m, Angle 45 (read as the full cone width).
+        private const float IonStormReach = 1.0f;
+        private const float IonStormArc = 45f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.ShieldSpecialist;
 
         public override string Name => "Vanguard Shield Specialist";
@@ -53,7 +58,8 @@ namespace DefaultCombat.Routines
                     Spell.Buff("Reactive Shield", ret => Core.Player.HealthPercent <= 60),
                     //(Power Yield is a Powertech/Advanced Prototype ability -- no Vanguard discipline
                     // grants it. Shield Specialist's "special"-slot pick is Infused Kolto Packs.)
-                    Spell.Cast("Riot Gas", ret => Core.Player.HealthPercent <= 75),
+                    //Riot Gas is an 8 m sphere around us, not the target.
+                    Spell.Cast("Riot Gas", ret => Core.Player.HealthPercent <= 75 && Core.Player.Target.Distance <= 0.8f),
                     Spell.Buff("Adrenaline Rush", ret => Core.Player.HealthPercent <= 30),
                     Spell.Buff("Unity", ret => Core.Player.Companion != null && Core.Player.HealthPercent <= 15),
 
@@ -84,7 +90,8 @@ namespace DefaultCombat.Routines
                     //Low cells -- free / procced casts only until energy regenerates
                     new Decorator(ret => Core.Player.EnergyPercent <= 40,
                         new PrioritySelector(
-                            Spell.Cast("Ion Storm", ret => Core.Player.HasBuff("Pulse Engine") && Core.Player.Target.EdgeDistance <= 1f),
+                            //Ion Storm is a 10 m forward cone from us; the engine never range-checks it.
+                            Spell.Cast("Ion Storm", ret => Core.Player.HasBuff("Pulse Engine") && Targeting.InFrontalCone(Core.Player.Target, IonStormReach, IonStormArc)),
                             Spell.Cast("Ion Pulse", ret => Core.Player.HasBuff("Static Surge")),
                             Spell.Cast("Hammer Shot")
                             )),
@@ -93,8 +100,9 @@ namespace DefaultCombat.Routines
                     //so they lead -- Energy Blast is fired off-GCD from Cooldowns
                     Spell.Cast("Stockstrike"),
                     Spell.Cast("High Impact Bolt"),
+                    //Ion Storm is a 10 m forward cone from us; the engine never range-checks it.
                     Spell.Cast("Ion Storm",
-                        ret => (Core.Player.HasBuff("Pulse Engine") || Core.Player.Level < 50) && Core.Player.Target.EdgeDistance <= 1f),
+                        ret => (Core.Player.HasBuff("Pulse Engine") || Core.Player.Level < 50) && Targeting.InFrontalCone(Core.Player.Target, IonStormReach, IonStormArc)),
                     Spell.Cast("Shoulder Cannon", ret => Core.Player.HasBuff("Shoulder Cannon") && Core.Player.Target.StrongOrGreater()),
 
                     //Fillers
@@ -112,13 +120,17 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     new Decorator(ret => Targeting.ShouldAoe,
                         new PrioritySelector(
-                            Spell.CastOnGround("Artillery Blitz")
+                            //Artillery Blitz is ground-placed at the target: 10 m max range, 5 m sphere.
+                            Spell.CastOnGround("Artillery Blitz", ret => Core.Player.Target.Distance <= 1.0f && Targeting.ShouldTargetAoe(0.5f))
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
-                            Spell.Cast("Ion Storm"),
-                            Spell.Cast("Flak Shell"),
-                            Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50)
+                            //Forward cone, not a point-blank AoE: enemies around us only count when they stand inside it.
+                            Spell.Cast("Ion Storm", ret => Targeting.ShouldFrontalConeAoe(IonStormReach, IonStormArc)),
+                            //Flak Shell hits an 8 m sphere around the target.
+                            Spell.Cast("Flak Shell", ret => Targeting.ShouldTargetAoe(0.8f)),
+                            //Explosive Surge is a 5 m sphere around us, not the target.
+                            Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldPointBlankAoe(0.5f))
                             )));
             }
         }

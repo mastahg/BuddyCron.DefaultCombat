@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Vigilance : RotationBase
     {
+        // Vigilant Thrust is a self-cast 5.1 m sphere around us (abl.jedi_knight.skill.vigilance.vigilant_thrust).
+        private const float VigilantThrustRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Vigilance;
 
         public override string Name => "Guardian Vigilance";
@@ -76,7 +79,8 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Plasma Brand"),
                     Spell.Cast("Blade Storm", ret => Core.Player.BuffCount("Force Rush") >= 2 || Core.Player.Level < 40),
                     Spell.Cast("Blade Barrage"),
-                    Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                    //Vigilant Thrust is a 5 m sphere around us, not the target.
+                    Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.Distance <= VigilantThrustRadius),
 
                     //Whirling Blade replaces Dispatch for Vigilance; Keening makes it free and usable
                     //at any health. Dispatch is the pre-replacement (low level) fallback.
@@ -105,9 +109,11 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Overhead Slash"),
                         Spell.Cast("Plasma Brand"),
                         Spell.Cast("Blade Storm"),
-                        Spell.Cast("Vigilant Thrust", ret => Core.Player.Target.EdgeDistance <= 0.5f),
-                        Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        //Vigilant Thrust and Force Sweep are 5 m spheres around us, not the target.
+                        Spell.Cast("Vigilant Thrust", ret => Targeting.ShouldPointBlankAoe(VigilantThrustRadius)),
+                        Spell.Cast("Force Sweep", ret => Targeting.ShouldPointBlankAoe(0.5f)),
+                        //Cyclone Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Cyclone Slash", ret => Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Blade Barrage")
                         ));
             }

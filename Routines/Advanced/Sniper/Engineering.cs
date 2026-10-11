@@ -21,6 +21,11 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Engineering : RotationBase
     {
+        // Plasma Probe, Orbital Strike and Suppressive Fire are 8 m ground circles; Plasma Probe reaches 35 m, the others 30 m.
+        private const float GroundAoeRadius = 0.8f;
+        private const float GroundAoeRange = 3.0f;
+        private const float PlasmaProbeRange = 3.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Engineering;
 
         public override string Name => "Sniper Engineering";
@@ -86,13 +91,15 @@ namespace DefaultCombat.Routines
                     Spell.DoT("Interrogation Probe", "Interrogation Probe"),
                     Spell.Cast("Explosive Probe"),
                     Spell.Cast("Series of Shots"),
-                    Spell.DoTGround("Plasma Probe", 9000),
+                    //Plasma Probe is dropped at the target's feet from up to 35 m.
+                    Spell.DoTGround("Plasma Probe", 9000, ret => Core.Player.Target.Distance <= PlasmaProbeRange),
                     Spell.Cast("EMP Discharge",
                         ret => Core.Player.Target.HasMyDebuff("Interrogation Probe") || Core.Player.Level < 40),
                     Spell.Cast("Takedown", ret => Core.Player.Target.HealthPercent <= 30),
                     Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 60),
                     Spell.DoT("Corrosive Dart", "Corrosive Dart", 0, ret => Core.Player.EnergyPercent > 60),
-                    Spell.CastOnGround("Orbital Strike", ret => Core.Player.EnergyPercent > 75),
+                    //Orbital Strike is a ground circle at the target, cast from up to 30 m.
+                    Spell.CastOnGround("Orbital Strike", ret => Core.Player.EnergyPercent > 75 && Core.Player.Target.Distance <= GroundAoeRange),
                     Spell.Cast("Snipe"),
 
                     //Never stall
@@ -108,10 +115,14 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldAoe,
                     new PrioritySelector(
                         Spell.Buff("Crouch", ret => !Core.Player.IsInCover() && !Core.Player.IsMoving),
-                        Spell.DoTGround("Plasma Probe", 9000),
-                        Spell.CastOnGround("Orbital Strike", ret => Core.Player.EnergyPercent > 50),
-                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 50),
-                        Spell.CastOnGround("Suppressive Fire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30)
+                        //Plasma Probe is an 8 m ground circle at the target, cast from up to 35 m.
+                        Spell.DoTGround("Plasma Probe", 9000, ret => Core.Player.Target.Distance <= PlasmaProbeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Orbital Strike is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Orbital Strike", ret => Core.Player.EnergyPercent > 50 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Fragmentation Grenade only splashes 5 m around the target.
+                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 50 && Targeting.ShouldTargetAoe(0.5f)),
+                        //Suppressive Fire is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Suppressive Fire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius))
                         ));
             }
         }

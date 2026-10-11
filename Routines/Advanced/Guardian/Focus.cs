@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Focus : RotationBase
     {
+        // Force Sweep is a self-cast 5.1 m sphere around us (abl.jedi_knight.sweep).
+        private const float ForceSweepRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Focus;
 
         public override string Name => "Guardian Focus";
@@ -74,9 +77,10 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Zealous Leap"),
                     Spell.Cast("Force Exhaustion", ret => !Core.Player.HasBuff("Singularity")),
                     Spell.Cast("Focused Burst", ret => Core.Player.HasBuff("Felling Blow")),
+                    //Force Sweep is a 5 m sphere around us, not the target.
                     Spell.Cast("Force Sweep",
                         ret => (Core.Player.HasBuff("Felling Blow") || !AbilityManager.HasAbility("Focused Burst")) &&
-                               Core.Player.Target.EdgeDistance <= 0.5f),
+                               Core.Player.Target.Distance <= ForceSweepRadius),
 
                     //Force Lash / Focused Vision windows
                     Spell.Cast("Concentrated Slice"),
@@ -107,10 +111,12 @@ namespace DefaultCombat.Routines
                         //Force Sweep is the AoE payoff - only spend it with the procs up
                         Spell.Cast("Force Exhaustion", ret => !Core.Player.HasBuff("Singularity")),
                         Spell.Cast("Zealous Leap"),
-                        Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        //Force Sweep is a 5 m sphere around us, not the target.
+                        Spell.Cast("Force Sweep", ret => Targeting.ShouldPointBlankAoe(ForceSweepRadius)),
                         Spell.Cast("Blade Storm"),
                         Spell.Cast("Blade Barrage"),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        //Cyclone Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Cyclone Slash", ret => Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Sundering Strike", ret => Core.Player.ActionPoints <= 5)
                         ));
             }

@@ -28,6 +28,8 @@ namespace DefaultCombat.Routines
         // stays just under 10.1 m so a pulse of movement cannot carry a counted enemy out.
         private const float SearingWaveReach = 1.0f;
         private const float SearingWaveArc = 45f;
+        // Flame Sweep is a self-cast 5.1 m sphere around us (abl.bounty_hunter.flame_sweep).
+        private const float FlameSweepRadius = 0.5f;
 
         public override CharacterDiscipline Discipline => CharacterDiscipline.FirebugPyrotech;
 
@@ -119,16 +121,18 @@ namespace DefaultCombat.Routines
                             CombatMovement.CloseDistance(Distance.MeleeAoE),
                             Spell.DoT("Incendiary Missile", "Burning (Incendiary Missile)"),
                             Spell.DoT("Scorch", "Scorch"),
-                            Spell.CastOnGround("Deadly Onslaught")
+                            //Deadly Onslaught is ground-placed at the target: 10 m max range, 5 m sphere.
+                            Spell.CastOnGround("Deadly Onslaught", ret => Core.Player.Target.Distance <= 1.0f && Targeting.ShouldTargetAoe(0.5f))
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
                             CombatMovement.CloseDistance(Distance.MeleeAoE),
                             //Forward cone, not a point-blank AoE: enemies around us only count when they stand inside it.
                             Spell.Cast("Searing Wave", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldFrontalConeAoe(SearingWaveReach, SearingWaveArc)),
-                            Spell.Cast("Flame Sweep", ret => Core.Player.HasBuff("Flame Barrage")),
+                            //Flame Sweep is a 5 m sphere around us, not the target.
+                            Spell.Cast("Flame Sweep", ret => Core.Player.HasBuff("Flame Barrage") && Targeting.ShouldPointBlankAoe(FlameSweepRadius)),
                             //(Shatter Slug is granted to Advanced Prototype and Shield Tech only -- not Pyrotech.)
-                            Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50)
+                            Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldPointBlankAoe(FlameSweepRadius))
                             )));
             }
         }

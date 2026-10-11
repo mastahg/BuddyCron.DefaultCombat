@@ -26,6 +26,9 @@ namespace DefaultCombat.Routines
 
         public override string Name => "Scoundrel Ruffian";
 
+        //Bushwhack is an 8 m sphere around us, not around the target.
+        private const float BushwhackRadius = 0.8f;
+
         /// <summary>
         ///     While stealthed with Point Blank Shot available we hold everything else so the opener
         ///     is always the stealth Point Blank Shot (auto-crit, generates Upper Hand and Cut to the
@@ -113,8 +116,9 @@ namespace DefaultCombat.Routines
                     //spend Upper Hand on Bushwhack and Brutal Shots.
                     Spell.Cast("Sanguinary Shot", ret => !HoldForOpener),
                     Spell.Cast("Point Blank Shot", ret => !HoldForOpener),
+                    //Bushwhack is an 8 m sphere around us, not the target.
                     Spell.Cast("Bushwhack", on => Core.Player,
-                        ret => !HoldForOpener && Core.Player.HasBuff("Upper Hand")),
+                        ret => !HoldForOpener && Core.Player.HasBuff("Upper Hand") && Core.Player.Target.Distance <= BushwhackRadius),
 
                     //Spend Upper Hand - primary filler. Unfair Advantage makes it free, but the buff
                     //only exists once the passive is trained, hence the plain Upper Hand check too.
@@ -139,11 +143,15 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe && !HoldForOpener,
                     new PrioritySelector(
-                        Spell.DoT("Shrap Bomb", "Shrap Bomb"),
+                        //Shrap Bomb splashes 5 m around the target.
+                        Spell.DoT("Shrap Bomb", "Shrap Bomb", reqs: ret => Targeting.ShouldTargetAoe(0.5f)),
+                        //Bushwhack is an 8 m sphere around us, not the target.
                         Spell.Cast("Bushwhack", on => Core.Player,
-                            ret => Core.Player.HasBuff("Upper Hand")),
-                        Spell.Cast("Lacerating Blast"),
-                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent >= 60)
+                            ret => Core.Player.HasBuff("Upper Hand") && Targeting.ShouldPointBlankAoe(BushwhackRadius)),
+                        //Lacerating Blast is a 10 m / 45 degree forward cone from us.
+                        Spell.Cast("Lacerating Blast", ret => Targeting.ShouldFrontalConeAoe(1.0f, 45f)),
+                        //Thermal Grenade splashes 5 m around the target.
+                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent >= 60 && Targeting.ShouldTargetAoe(0.5f))
                         ));
             }
         }

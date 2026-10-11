@@ -79,7 +79,7 @@ namespace DefaultCombat.Behaviors
             return
                 new Decorator(
                     ret =>
-                        (reqs == null || reqs(ret)) && Core.Player.Target != null,
+                        Core.Player.Target != null && (reqs == null || reqs(ret)),
                     CastOnGround(spell, ctx => Core.Player.Target.Location, ctx => true));
         }
 
@@ -109,9 +109,9 @@ namespace DefaultCombat.Behaviors
         {
             return
                 new Decorator(
-                    ret => (reqs == null || reqs(ret))
-                           && onUnit != null
+                    ret => onUnit != null
                            && onUnit(ret) != null
+                           && (reqs == null || reqs(ret))
                            && AbilityManager.CanCast(spell, onUnit(ret)).Success
                            && !SpellBlackListed(spell, onUnit(ret).NodeId),
                     new PrioritySelector(

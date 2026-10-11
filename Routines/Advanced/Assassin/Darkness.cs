@@ -99,11 +99,15 @@ namespace DefaultCombat.Routines
                         new PrioritySelector(
                             //Depredating Volts is worth using in AoE even at 0 Harnessed Darkness
                             Spell.Cast("Depredating Volts"),
-                            Spell.Cast("Wither"),
-                            Spell.Cast("Discharge"),
-                            Spell.Cast("Severing Slash"))),
+                            //Wither is an 8 m sphere around the target.
+                            Spell.Cast("Wither", ret => Targeting.ShouldTargetAoe(0.8f)),
+                            //Darkness Discharge is an 8 m sphere around the target.
+                            Spell.Cast("Discharge", ret => Targeting.ShouldTargetAoe(0.8f)),
+                            //Severing Slash is a 5 m / 160 degree forward cone from us.
+                            Spell.Cast("Severing Slash", ret => Targeting.ShouldFrontalConeAoe(0.5f, 160f)))),
                     new Decorator(ret => Targeting.ShouldPbaoe,
-                        Spell.Cast("Lacerate", ret => Core.Player.ForcePercent >= 40))
+                        //Lacerate is a 5 m sphere around us.
+                        Spell.Cast("Lacerate", ret => Core.Player.ForcePercent >= 40 && Targeting.ShouldPointBlankAoe(0.5f)))
                     );
             }
         }

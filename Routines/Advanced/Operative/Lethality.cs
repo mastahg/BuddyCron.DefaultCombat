@@ -25,6 +25,9 @@ namespace DefaultCombat.Routines
 
         public override string Name => "Operative Lethality";
 
+        //Toxic Haze is an 8 m sphere around us, not around the target.
+        private const float ToxicHazeRadius = 0.8f;
+
         /// <summary>
         ///     While stealthed with Lethal Strike available we hold everything else so the opener
         ///     is always the stealth Lethal Strike (grants Tactical Advantage + Augmented Toxins).
@@ -111,8 +114,9 @@ namespace DefaultCombat.Routines
                     //Toxic Haze and Corrosive Assault with that window.
                     Spell.Cast("Toxic Blast", ret => !HoldForOpener),
                     Spell.Cast("Lethal Strike", ret => !HoldForOpener),
+                    //Toxic Haze is an 8 m sphere around us, not the target.
                     Spell.Cast("Toxic Haze", on => Core.Player,
-                        ret => !HoldForOpener && Core.Player.HasBuff("Tactical Advantage")),
+                        ret => !HoldForOpener && Core.Player.HasBuff("Tactical Advantage") && Core.Player.Target.Distance <= ToxicHazeRadius),
                     Spell.Cast("Corrosive Assault", ret => !HoldForOpener && Core.Player.HasBuff("Tactical Advantage")),
 
                     //Build Tactical Advantage
@@ -133,11 +137,15 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe && !HoldForOpener,
                     new PrioritySelector(
-                        Spell.DoT("Corrosive Grenade", "Corrosive Grenade"),
+                        //Corrosive Grenade splashes 5 m around the target.
+                        Spell.DoT("Corrosive Grenade", "Corrosive Grenade", reqs: ret => Targeting.ShouldTargetAoe(0.5f)),
+                        //Toxic Haze is an 8 m sphere around us, not the target.
                         Spell.Cast("Toxic Haze", on => Core.Player,
-                            ret => Core.Player.HasBuff("Tactical Advantage")),
-                        Spell.Cast("Noxious Knives"),
-                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent >= 60)
+                            ret => Core.Player.HasBuff("Tactical Advantage") && Targeting.ShouldPointBlankAoe(ToxicHazeRadius)),
+                        //Noxious Knives is a 10 m / 45 degree forward cone from us.
+                        Spell.Cast("Noxious Knives", ret => Targeting.ShouldFrontalConeAoe(1.0f, 45f)),
+                        //Fragmentation Grenade splashes 5 m around the target.
+                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent >= 60 && Targeting.ShouldTargetAoe(0.5f))
                         ));
             }
         }

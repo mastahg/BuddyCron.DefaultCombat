@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Serenity : RotationBase
     {
+        //Force in Balance is placed on the target's location and may only be placed within 10 m.
+        private const float ForceInBalanceRange = 1.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Serenity;
 
         public override string Name => "Shadow Serenity";
@@ -74,7 +77,8 @@ namespace DefaultCombat.Routines
                     //Force Strike finishes Squelch's cooldown and makes it free - always spend it
                     Spell.Cast("Squelch", ret => Core.Player.HasBuff("Force Strike")),
                     //Force in Balance on cooldown: it applies Overwhelmed (Mental) and boosts our DoT damage
-                    Spell.CastOnGround("Force in Balance"),
+                    //Force in Balance is a ground AoE at the target: it may only be placed within 10 m.
+                    Spell.CastOnGround("Force in Balance", ret => Core.Player.Target.Distance <= ForceInBalanceRange),
                     //Keep both 18s DoTs rolling
                     Spell.Cast("Sever Force",
                         ret => !Core.Player.Target.HasMyDebuff("Sever Force") || Core.Player.Target.DebuffTimeLeft("Sever Force") <= 3),
@@ -99,14 +103,16 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     new Decorator(ret => Targeting.ShouldAoe,
                         new PrioritySelector(
-                            Spell.CastOnGround("Force in Balance"),
+                            //Force in Balance is a 5 m sphere on the target, placed within 10 m.
+                            Spell.CastOnGround("Force in Balance", ret => Core.Player.Target.Distance <= ForceInBalanceRange && Targeting.ShouldTargetAoe(0.5f)),
                             Spell.Cast("Force Breach", ret => !Core.Player.Target.HasMyDebuff("Force Breach")),
                             Spell.Cast("Sever Force", ret => !Core.Player.Target.HasMyDebuff("Sever Force")),
-                            //Cleaving Cut spreads both DoTs and heals for 50% of the damage dealt
-							Spell.Cast("Cleaving Cut"))),
+                            //Cleaving Cut spreads both DoTs and heals for 50% of the damage dealt.
+                            //It is a 5 m / 160 degree forward cone from us.
+							Spell.Cast("Cleaving Cut", ret => Targeting.ShouldFrontalConeAoe(0.5f, 160f)))),
                     new Decorator(ret => Targeting.ShouldPbaoe,
-                        //Whirling Blow is the AoE filler and also spreads the DoTs
-                        Spell.Cast("Whirling Blow", ret => Core.Player.ForcePercent >= 40))
+                        //Whirling Blow is the AoE filler and also spreads the DoTs. It is a 5 m sphere around us.
+                        Spell.Cast("Whirling Blow", ret => Core.Player.ForcePercent >= 40 && Targeting.ShouldPointBlankAoe(0.5f)))
                     );
             }
         }

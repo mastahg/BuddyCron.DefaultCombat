@@ -20,6 +20,10 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Sharpshooter : RotationBase
     {
+        // Bombing Run and Sweeping Gunfire: ground AoE, 8 m radius, 30 m max range.
+        private const float GroundAoeRadius = 0.8f;
+        private const float GroundAoeRange = 3.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Sharpshooter;
 
         public override string Name => "Gunslinger Sharpshooter";
@@ -115,9 +119,12 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         Spell.Buff("Crouch", ret => !Core.Player.IsInCover() && !Core.Player.IsMoving),
                         //Bombing Run (7.0 rename of XS Freighter Flyby) is the lvl 68 tree choice -- skipped when not chosen
-                        Spell.CastOnGround("Bombing Run", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 60),
-                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent > 50),
-                        Spell.CastOnGround("Sweeping Gunfire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30)
+                        //Bombing Run is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Bombing Run", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 60 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Thermal Grenade only splashes 5 m around the target.
+                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent > 50 && Targeting.ShouldTargetAoe(0.5f)),
+                        //Sweeping Gunfire is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Sweeping Gunfire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius))
                         ));
             }
         }

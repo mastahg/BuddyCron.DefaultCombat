@@ -111,13 +111,16 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     new Decorator(ret => Targeting.ShouldAoe,
                         new PrioritySelector(
-                            Spell.CastOnGround("Deadly Onslaught")
+                            //Deadly Onslaught is ground-placed at the target: 10 m max range, 5 m sphere.
+                            Spell.CastOnGround("Deadly Onslaught", ret => Core.Player.Target.Distance <= 1.0f && Targeting.ShouldTargetAoe(0.5f))
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
-                            Spell.Cast("Shatter Slug"),
+                            //Shatter Slug hits an 8 m sphere around the target.
+                            Spell.Cast("Shatter Slug", ret => Targeting.ShouldTargetAoe(0.8f)),
                             Spell.Cast("Rail Shot"),
-                            Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50)
+                            //Flame Sweep is a 5 m sphere around us, not the target.
+                            Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldPointBlankAoe(0.5f))
                             )));
             }
         }

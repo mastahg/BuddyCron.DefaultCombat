@@ -22,6 +22,10 @@ namespace DefaultCombat.Routines
     {
         private const double MindCrushMinimumTtd = 8;
 
+        // Telekinetic Wave (abl.jedi_consular.skill.telekinetics.telekinetic_wave) is target-cast and
+        // hits through an AoE Sphere of radius 8 m around the primary target.
+        private const float TelekineticWaveRadius = 0.8f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Telekinetics;
 
         public override string Name => "Sage Telekinetics";
@@ -121,10 +125,12 @@ namespace DefaultCombat.Routines
                         Spell.DoT("Weaken Mind", "Weaken Mind"),
 
                         Spell.Cast("Power of the Force", ret => Core.Player.HasBuff("Tidal Force")),
-                        Spell.Cast("Telekinetic Wave", ret => Core.Player.HasBuff("Tidal Force")),
-                        Spell.Cast("Telekinetic Wave"),
+                        //Telekinetic Wave is an 8 m sphere around the target.
+                        Spell.Cast("Telekinetic Wave", ret => Core.Player.HasBuff("Tidal Force") && Targeting.ShouldTargetAoe(TelekineticWaveRadius)),
+                        Spell.Cast("Telekinetic Wave", ret => Targeting.ShouldTargetAoe(TelekineticWaveRadius)),
                         Spell.Cast("Turbulence"),
-                        Spell.CastOnGround("Forcequake")
+                        //Forcequake is an 8 m sphere placed at the target, castable within 30 m.
+                        Spell.CastOnGround("Forcequake", ret => Core.Player.Target.Distance <= 3.0f && Targeting.ShouldTargetAoe(0.8f))
                         ));
             }
         }

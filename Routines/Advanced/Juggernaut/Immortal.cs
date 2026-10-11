@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Immortal : RotationBase
     {
+        // Smash is a self-cast 5.1 m sphere around us (abl.sith_warrior.smash).
+        private const float SmashRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Immortal;
 
         public override string Name => "Juggernaut Immortal";
@@ -75,7 +78,8 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Ravage"),
                     Spell.Cast("Backhand", ret => !Core.Player.Target.IsStunned),
                     Spell.Cast("Vicious Throw", ret => Core.Player.Target.HealthPercent <= 30),
-                    Spell.Cast("Smash", ret => Targeting.ShouldPbaoe),
+                    //Smash is a 5 m sphere around us; only worth a GCD when the pack is inside it.
+                    Spell.Cast("Smash", ret => Targeting.ShouldPointBlankAoe(SmashRadius)),
 
                     //Fillers
                     Spell.Cast("Retaliation"),
@@ -93,12 +97,15 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         //Aegis Assault enables Crushing Blow's cleave; establish the buff first.
                         Spell.Cast("Aegis Assault", ret => !Core.Player.HasBuff("Aegis Assault")),
-                        Spell.Cast("Crushing Blow"),
-                        Spell.Cast("Smash"),
+                        //With Aegis Assault up, Crushing Blow cleaves a 5 m sphere around the target.
+                        Spell.Cast("Crushing Blow", ret => Targeting.ShouldTargetAoe(0.5f)),
+                        //Smash is a 5 m sphere around us, not the target.
+                        Spell.Cast("Smash", ret => Targeting.ShouldPointBlankAoe(SmashRadius)),
                         Spell.Cast("Force Scream"),
                         Spell.Cast("Aegis Assault", ret => Core.Player.ActionPoints <= 8),
                         Spell.Cast("Retaliation"),
-                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6)
+                        //Sweeping Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6 && Targeting.ShouldFrontalConeAoe(0.5f, 179f))
                         ));
             }
         }

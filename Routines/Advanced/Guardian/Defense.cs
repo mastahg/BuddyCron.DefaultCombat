@@ -22,6 +22,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Defense : RotationBase
     {
+        // Force Sweep is a self-cast 5.1 m sphere around us (abl.jedi_knight.sweep).
+        private const float ForceSweepRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Defense;
 
         public override string Name => "Guardian Defense";
@@ -79,7 +82,8 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Dispatch", ret => Core.Player.Target.HealthPercent <= 30),
                     Spell.Cast("Blade Barrage"),
                     Spell.Cast("Hilt Bash", ret => !Core.Player.Target.IsStunned && !Core.Player.Target.BossOrGreater() && Core.Player.Target.EdgeDistance <= 0.4f),
-                    Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                    //Force Sweep is a 5 m sphere around us, not the target.
+                    Spell.Cast("Force Sweep", ret => Core.Player.Target.Distance <= ForceSweepRadius),
 
                     //Fillers
                     Spell.Cast("Saber Throw", ret => Core.Player.ActionPoints >= 3),
@@ -97,10 +101,13 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         //Guardian Slash only cleaves while Warding Strike's buff is up
                         Spell.Cast("Warding Strike", ret => !Core.Player.HasBuff("Warding Strike")),
-                        Spell.Cast("Guardian Slash", ret => Core.Player.HasBuff("Warding Strike") || Core.Player.Level < 30),
+                        //With Warding Strike up, Guardian Slash cleaves a 5 m sphere around the target.
+                        Spell.Cast("Guardian Slash", ret => (Core.Player.HasBuff("Warding Strike") || Core.Player.Level < 30) && Targeting.ShouldTargetAoe(0.5f)),
                         Spell.Cast("Blade Storm"),
-                        Spell.Cast("Force Sweep", ret => Core.Player.Target.EdgeDistance <= 0.5f),
-                        Spell.Cast("Cyclone Slash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        //Force Sweep is a 5 m sphere around us, not the target.
+                        Spell.Cast("Force Sweep", ret => Targeting.ShouldPointBlankAoe(ForceSweepRadius)),
+                        //Cyclone Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Cyclone Slash", ret => Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Blade Barrage")
                         ));
             }

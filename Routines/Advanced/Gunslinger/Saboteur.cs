@@ -21,6 +21,13 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Saboteur : RotationBase
     {
+        // Incendiary Grenade, Bombing Run and Sweeping Gunfire are 8 m ground circles; Incendiary Grenade reaches 35 m, the others 30 m.
+        private const float GroundAoeRadius = 0.8f;
+        private const float GroundAoeRange = 3.0f;
+        private const float IncendiaryGrenadeRange = 3.5f;
+        // Sabotage (Sow Chaos) and Thermal Grenade splash 5 m around the target.
+        private const float SplashRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Saboteur;
 
         public override string Name => "Gunslinger Saboteur";
@@ -90,13 +97,15 @@ namespace DefaultCombat.Routines
                     Spell.DoT("Shock Charge", "Shock Charge"),
                     Spell.Cast("Explosive Charge"),
                     Spell.Cast("Speed Shot"),
-                    Spell.DoTGround("Incendiary Grenade", 9000),
+                    //Incendiary Grenade is dropped at the target's feet from up to 35 m.
+                    Spell.DoTGround("Incendiary Grenade", 9000, ret => Core.Player.Target.Distance <= IncendiaryGrenadeRange),
                     //Sabotage detonates our charges; do not let the Shock Charge gate lock it out
                     //on a low level character that has not trained Shock Charge yet.
                     Spell.Cast("Sabotage", ret => Core.Player.Target.HasMyDebuff("Shock Charge") || Core.Player.Level < 30),
                     Spell.Cast("Thermal Grenade", ret => Core.Player.HasBuff("Seize the Moment")),
                     Spell.DoT("Vital Shot", "Vital Shot"),
-                    Spell.CastOnGround("Bombing Run", ret => Core.Player.EnergyPercent > 70),
+                    //Bombing Run is a ground circle at the target, cast from up to 30 m.
+                    Spell.CastOnGround("Bombing Run", ret => Core.Player.EnergyPercent > 70 && Core.Player.Target.Distance <= GroundAoeRange),
                     //Ability tree choice (lvl 27) for Saboteur -- skipped when not chosen
                     Spell.Cast("Quickdraw", ret => Core.Player.Target.HealthPercent <= 30),
 
@@ -117,13 +126,16 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldAoe,
                     new PrioritySelector(
                         Spell.Buff("Crouch", ret => !Core.Player.IsInCover() && !Core.Player.IsMoving),
-                        Spell.DoTGround("Incendiary Grenade", 9000),
-                        //Bombing Run (7.0 rename of XS Freighter Flyby)
-                        Spell.CastOnGround("Bombing Run", ret => Core.Player.EnergyPercent > 50),
-                        //Sow Chaos makes Sabotage cleave off anything burning with Blazing Speed
-                        Spell.Cast("Sabotage", ret => Core.Player.Target.HasMyDebuff("Shock Charge") || Core.Player.Level < 30),
-                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent > 50),
-                        Spell.CastOnGround("Sweeping Gunfire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30)
+                        //Incendiary Grenade is an 8 m ground circle at the target, cast from up to 35 m.
+                        Spell.DoTGround("Incendiary Grenade", 9000, ret => Core.Player.Target.Distance <= IncendiaryGrenadeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Bombing Run (7.0 rename of XS Freighter Flyby) is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Bombing Run", ret => Core.Player.EnergyPercent > 50 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Sow Chaos makes Sabotage cleave 5 m around the target off anything burning with Blazing Speed
+                        Spell.Cast("Sabotage", ret => (Core.Player.Target.HasMyDebuff("Shock Charge") || Core.Player.Level < 30) && Targeting.ShouldTargetAoe(SplashRadius)),
+                        //Thermal Grenade only splashes 5 m around the target.
+                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent > 50 && Targeting.ShouldTargetAoe(SplashRadius)),
+                        //Sweeping Gunfire is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Sweeping Gunfire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius))
                         ));
             }
         }

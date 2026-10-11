@@ -20,6 +20,10 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Marksmanship : RotationBase
     {
+        // Orbital Strike and Suppressive Fire: ground AoE, 8 m radius, 30 m max range.
+        private const float GroundAoeRadius = 0.8f;
+        private const float GroundAoeRange = 3.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Marksmanship;
 
         public override string Name => "Sniper Marksmanship";
@@ -110,9 +114,12 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         Spell.Buff("Crouch", ret => !Core.Player.IsInCover() && !Core.Player.IsMoving),
                         //Ability tree choice (lvl 68) for Marksmanship -- skipped when not chosen
-                        Spell.CastOnGround("Orbital Strike", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 60),
-                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 50),
-                        Spell.CastOnGround("Suppressive Fire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30)
+                        //Orbital Strike is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Orbital Strike", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 60 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Fragmentation Grenade only splashes 5 m around the target.
+                        Spell.Cast("Fragmentation Grenade", ret => Core.Player.EnergyPercent > 50 && Targeting.ShouldTargetAoe(0.5f)),
+                        //Suppressive Fire is an 8 m ground circle at the target, cast from up to 30 m.
+                        Spell.CastOnGround("Suppressive Fire", ret => Core.Player.IsInCover() && Core.Player.EnergyPercent > 30 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius))
                         ));
             }
         }

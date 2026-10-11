@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Vengeance : RotationBase
     {
+        // Vengeful Slam is a self-cast 5.1 m sphere around us (abl.sith_warrior.skill.vengeance.vengeful_slam).
+        private const float VengefulSlamRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Vengeance;
 
         public override string Name => "Juggernaut Vengeance";
@@ -73,7 +76,8 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Force Scream",
                         ret => Core.Player.BuffCount("Savagery") >= 2 || Core.Player.Level < 40 || !Core.Player.Target.BossOrGreater()),
                     Spell.Cast("Ravage"),
-                    Spell.Cast("Vengeful Slam", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                    //Vengeful Slam is a 5 m sphere around us, not the target.
+                    Spell.Cast("Vengeful Slam", ret => Core.Player.Target.Distance <= VengefulSlamRadius),
 
                     //Execute: free/anytime with the Destroyer proc, otherwise sub-30%.
                     Spell.Cast("Hew", ret => Core.Player.HasBuff("Destroyer") || Core.Player.Target.HealthPercent <= 30),
@@ -97,10 +101,12 @@ namespace DefaultCombat.Routines
                         Spell.Cast("Impale"),
                         Spell.Cast("Shatter"),
                         Spell.Cast("Force Scream"),
-                        Spell.Cast("Vengeful Slam", ret => Core.Player.Target.EdgeDistance <= 0.5f),
-                        Spell.Cast("Smash", ret => Core.Player.Target.EdgeDistance <= 0.5f),
+                        //Vengeful Slam and Smash are 5 m spheres around us, not the target.
+                        Spell.Cast("Vengeful Slam", ret => Targeting.ShouldPointBlankAoe(VengefulSlamRadius)),
+                        Spell.Cast("Smash", ret => Targeting.ShouldPointBlankAoe(0.5f)),
                         Spell.Cast("Ravage"),
-                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6)
+                        //Sweeping Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6 && Targeting.ShouldFrontalConeAoe(0.5f, 179f))
                         ));
             }
         }

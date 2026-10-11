@@ -109,12 +109,13 @@ namespace DefaultCombat.Routines
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
                         //These out-damage Sweeping Slash at any target count, so they stay on top
-                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
+                        //Dual Saber Throw is a 2.5 m-wide line through the target; count the pack hugging it.
+                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldTargetAoe(0.25f)),
                         Spell.Cast("Ferocity", ret => Core.Player.Target.EdgeDistance <= Distance.MeleeAoE),
                         Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8),
 
-                        //Sweeping Slash beats the single-target fillers from 2 targets up
-                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5),
+                        //Sweeping Slash beats the single-target fillers from 2 targets up; it is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
 
                         Spell.Cast("Devastating Blast", ret => Core.Player.HasBuff("Execute") || Core.Player.Level < 30),
                         Spell.Cast("Vicious Throw",

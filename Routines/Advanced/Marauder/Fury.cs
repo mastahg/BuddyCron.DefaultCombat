@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Fury : RotationBase
     {
+        // Smash is a self-cast 5.1 m sphere around us (mirror of abl.jedi_knight.sweep).
+        private const float SmashRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Fury;
 
         public override string Name => "Marauder Fury";
@@ -109,13 +112,18 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         //Smash is the AoE stand-in for Raging Burst and eats the same procs
                         Spell.Cast("Force Crush", ret => !Core.Player.HasBuff("Shockwave")),
+                        //Smash is a 5 m sphere around us, not the target.
                         Spell.Cast("Smash",
-                            ret => Core.Player.HasBuff("Shockwave") || Core.Player.HasBuff("Dominate") ||
-                                   !AbilityManager.HasAbility("Raging Burst")),
-                        Spell.Cast("Obliterate", ret => CombatHotkeys.EnableCharge),
-                        Spell.Cast("Smash"),
-                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f),
-                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5),
+                            ret => Targeting.ShouldPointBlankAoe(SmashRadius) &&
+                                   (Core.Player.HasBuff("Shockwave") || Core.Player.HasBuff("Dominate") ||
+                                    !AbilityManager.HasAbility("Raging Burst"))),
+                        //Obliterate splashes a 5 m sphere around the target.
+                        Spell.Cast("Obliterate", ret => CombatHotkeys.EnableCharge && Targeting.ShouldTargetAoe(0.5f)),
+                        Spell.Cast("Smash", ret => Targeting.ShouldPointBlankAoe(SmashRadius)),
+                        //Dual Saber Throw is a 2.5 m-wide line through the target; count the pack hugging it.
+                        Spell.Cast("Dual Saber Throw", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldTargetAoe(0.25f)),
+                        //Sweeping Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 5 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Ravage"),
                         Spell.Cast("Battering Assault", ret => Core.Player.ActionPoints <= 8)
                         ));

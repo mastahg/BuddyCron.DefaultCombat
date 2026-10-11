@@ -109,10 +109,12 @@ namespace DefaultCombat.Routines
                                 ret => Core.Player.BuffCount("Breaching Shadows") >= 3 ||
                                        (Core.Player.BuffCount("Breaching Shadows") == 0 &&
                                         AbilityManager.CanCast("Force Breach", Core.Player.Target).Success)),
-							Spell.Cast("Cleaving Cut"))),
+							//Cleaving Cut is a 5 m / 160 degree forward cone from us.
+							Spell.Cast("Cleaving Cut", ret => Targeting.ShouldFrontalConeAoe(0.5f, 160f)))),
                     new Decorator(ret => Targeting.ShouldPbaoe,
-                        //Whirling Blow is the AoE filler and still procs Shadow Technique
-                        Spell.Cast("Whirling Blow", ret => Core.Player.ForcePercent >= 40))
+                        //Whirling Blow is the AoE filler and still procs Shadow Technique.
+                        //It is a 5 m sphere around us.
+                        Spell.Cast("Whirling Blow", ret => Core.Player.ForcePercent >= 40 && Targeting.ShouldPointBlankAoe(0.5f)))
                     );
             }
         }

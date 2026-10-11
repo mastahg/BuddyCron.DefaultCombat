@@ -27,6 +27,8 @@ namespace DefaultCombat.Routines
         // pulse of movement cannot carry a counted enemy out.
         private const float IonWaveReach = 1.0f;
         private const float IonWaveArc = 45f;
+        // Explosive Surge is a self-cast 5.1 m sphere around us (abl.trooper.explosive_surge).
+        private const float ExplosiveSurgeRadius = 0.5f;
 
         public override CharacterDiscipline Discipline => CharacterDiscipline.Plasmatech;
 
@@ -120,15 +122,17 @@ namespace DefaultCombat.Routines
                         new PrioritySelector(
                             Spell.DoT("Incendiary Round", "Burning (Incendiary Round)"),
                             Spell.DoT("Plasmatize", "Plasmatize"),
-                            Spell.CastOnGround("Artillery Blitz")
+                            //Artillery Blitz is ground-placed at the target: 10 m max range, 5 m sphere.
+                            Spell.CastOnGround("Artillery Blitz", ret => Core.Player.Target.Distance <= 1.0f && Targeting.ShouldTargetAoe(0.5f))
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
                             //Forward cone, not a point-blank AoE: enemies around us only count when they stand inside it.
                             Spell.Cast("Ion Wave", ret => Core.Player.Target.EdgeDistance <= 1f && Targeting.ShouldFrontalConeAoe(IonWaveReach, IonWaveArc)),
-                            Spell.Cast("Explosive Surge", ret => Core.Player.HasBuff("Plasma Barrage")),
+                            //Explosive Surge is a 5 m sphere around us, not the target.
+                            Spell.Cast("Explosive Surge", ret => Core.Player.HasBuff("Plasma Barrage") && Targeting.ShouldPointBlankAoe(ExplosiveSurgeRadius)),
                             //(Flak Shell is granted to Tactics and Shield Specialist only -- not Plasmatech.)
-                            Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50)
+                            Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldPointBlankAoe(ExplosiveSurgeRadius))
                             )));
             }
         }

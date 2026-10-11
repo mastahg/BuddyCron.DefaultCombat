@@ -22,6 +22,10 @@ namespace DefaultCombat.Routines
     {
         private const double CrushingDarknessMinimumTtd = 8;
 
+        // Chain Lightning (abl.sith_inquisitor.skill.lightning.chain_lightning) is target-cast and
+        // hits through an AoE Sphere of radius 8 m around the primary target.
+        private const float ChainLightningRadius = 0.8f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Lightning;
 
         public override string Name => "Sorcerer Lightning";
@@ -109,12 +113,14 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe,
                     new PrioritySelector(
-                        Spell.Cast("Chain Lightning", ret => Core.Player.HasBuff("Lightning Storm")),
+                        //Chain Lightning is an 8 m sphere around the target.
+                        Spell.Cast("Chain Lightning", ret => Core.Player.HasBuff("Lightning Storm") && Targeting.ShouldTargetAoe(ChainLightningRadius)),
                         Spell.Cast("Halted Offensive", ret => Core.Player.HasBuff("Lightning Storm")),
                         Spell.DoT("Affliction", "Affliction"),
-                        Spell.Cast("Chain Lightning"),
+                        Spell.Cast("Chain Lightning", ret => Targeting.ShouldTargetAoe(ChainLightningRadius)),
                         Spell.Cast("Halted Offensive"),
-                        Spell.CastOnGround("Force Storm")
+                        //Force Storm is an 8 m sphere placed at the target, castable within 30 m.
+                        Spell.CastOnGround("Force Storm", ret => Core.Player.Target.Distance <= 3.0f && Targeting.ShouldTargetAoe(0.8f))
                         ));
             }
         }

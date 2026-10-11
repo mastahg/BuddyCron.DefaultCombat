@@ -102,11 +102,15 @@ namespace DefaultCombat.Routines
                         new PrioritySelector(
                             //Cascading Debris is worth using in AoE even at 0 Harnessed Shadows
                             Spell.Cast("Cascading Debris"),
-                            Spell.Cast("Slow Time"),
-                            Spell.Cast("Force Breach"),
-                            Spell.Cast("Cleaving Cut"))),
+                            //Slow Time is an 8 m sphere around the target.
+                            Spell.Cast("Slow Time", ret => Targeting.ShouldTargetAoe(0.8f)),
+                            //Kinetic Combat Force Breach is an 8 m sphere around the target.
+                            Spell.Cast("Force Breach", ret => Targeting.ShouldTargetAoe(0.8f)),
+                            //Cleaving Cut is a 5 m / 160 degree forward cone from us.
+                            Spell.Cast("Cleaving Cut", ret => Targeting.ShouldFrontalConeAoe(0.5f, 160f)))),
                     new Decorator(ret => Targeting.ShouldPbaoe,
-                        Spell.Cast("Whirling Blow", ret => Core.Player.ForcePercent >= 40))
+                        //Whirling Blow is a 5 m sphere around us.
+                        Spell.Cast("Whirling Blow", ret => Core.Player.ForcePercent >= 40 && Targeting.ShouldPointBlankAoe(0.5f)))
                     );
             }
         }

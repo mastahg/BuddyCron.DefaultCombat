@@ -24,6 +24,10 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class AssaultSpecialist : RotationBase
     {
+        // Mortar Volley and Hail of Bolts are Ground abilities: 5 m sphere at the target point, 30 m range.
+        private const float GroundAoeRadius = 0.5f;
+        private const float GroundAoeRange = 3.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.AssaultSpecialist;
 
         public override string Name => "Commando Assault Specialist";
@@ -97,12 +101,16 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe,
                     new PrioritySelector(
-                        Spell.Cast("Plasma Grenade", ret => Core.Player.EnergyPercent >= 50),
-                        Spell.CastOnGround("Mortar Volley"),
+                        //Explodes on the target: 8 m sphere around it.
+                        Spell.Cast("Plasma Grenade", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldTargetAoe(0.8f)),
+                        //Ground: 5 m sphere around the target point, up to 30 m away.
+                        Spell.CastOnGround("Mortar Volley", ret => Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
                         Spell.DoT("Incendiary Round", "Burning (Incendiary Round)", 12000),
                         Spell.DoT("Serrated Bolt", "Bleeding", 12000),
-                        Spell.Cast("Explosive Round", ret => Core.Player.HasBuff("Hyper Assault Rounds")),
-                        Spell.CastOnGround("Hail of Bolts", ret => Core.Player.EnergyPercent >= 40)
+                        //Splashes standard/weak enemies within 5 m of the target.
+                        Spell.Cast("Explosive Round", ret => Core.Player.HasBuff("Hyper Assault Rounds") && Targeting.ShouldTargetAoe(0.5f)),
+                        //Ground: 5 m sphere around the target point, up to 30 m away.
+                        Spell.CastOnGround("Hail of Bolts", ret => Core.Player.EnergyPercent >= 40 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius))
                         ));
             }
         }

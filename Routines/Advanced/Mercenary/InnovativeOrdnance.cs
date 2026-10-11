@@ -23,6 +23,10 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class InnovativeOrdnance : RotationBase
     {
+        // Death from Above and Sweeping Blasters are Ground abilities: 5 m sphere at the target point, 30 m range.
+        private const float GroundAoeRadius = 0.5f;
+        private const float GroundAoeRange = 3.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.InnovativeOrdnance;
 
         public override string Name => "Mercenary Innovative Ordnance";
@@ -96,9 +100,12 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe,
                     new PrioritySelector(
-                        Spell.Cast("Fusion Missile", ret => Core.Player.EnergyPercent >= 50),
-                        Spell.CastOnGround("Death from Above"),
-                        Spell.CastOnGround("Sweeping Blasters", ret => Core.Player.EnergyPercent >= 40))
+                        //Explodes on the target: 8 m sphere around it.
+                        Spell.Cast("Fusion Missile", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldTargetAoe(0.8f)),
+                        //Ground: 5 m sphere around the target point, up to 30 m away.
+                        Spell.CastOnGround("Death from Above", ret => Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)),
+                        //Ground: 5 m sphere around the target point, up to 30 m away.
+                        Spell.CastOnGround("Sweeping Blasters", ret => Core.Player.EnergyPercent >= 40 && Core.Player.Target.Distance <= GroundAoeRange && Targeting.ShouldTargetAoe(GroundAoeRadius)))
                     );
             }
         }

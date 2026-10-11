@@ -20,6 +20,9 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Rage : RotationBase
     {
+        // Smash is a self-cast 5.1 m sphere around us (abl.sith_warrior.smash).
+        private const float SmashRadius = 0.5f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Rage;
 
         public override string Name => "Juggernaut Rage";
@@ -79,9 +82,10 @@ namespace DefaultCombat.Routines
                     Spell.Cast("Vicious Throw", ret => Core.Player.Target.HealthPercent <= 30),
 
                     //Smash is the low-level stand-in before Raging Burst is trained, and is still worth
-                    //pressing when a pack is stacked on the target.
+                    //pressing when a pack is stacked around us. It is a 5 m sphere around us, not the target.
                     Spell.Cast("Smash",
-                        ret => !AbilityManager.HasAbility("Raging Burst") || Targeting.ShouldPbaoe),
+                        ret => Core.Player.Target.Distance <= SmashRadius &&
+                               (!AbilityManager.HasAbility("Raging Burst") || Targeting.ShouldPointBlankAoe(SmashRadius))),
 
                     Spell.Cast("Force Scream"),
                     Spell.Cast("Ravage"),
@@ -101,11 +105,13 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldPbaoe,
                     new PrioritySelector(
-                        Spell.Cast("Smash"),
+                        //Smash is a 5 m sphere around us, not the target.
+                        Spell.Cast("Smash", ret => Targeting.ShouldPointBlankAoe(SmashRadius)),
                         Spell.Cast("Obliterate"),
                         Spell.Cast("Force Crush"),
                         Spell.Cast("Furious Strike", ret => Core.Player.ActionPoints >= 5 || Core.Player.HasBuff("Fuming Rage")),
-                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6),
+                        //Sweeping Slash is a 5 m, 179-degree forward cone.
+                        Spell.Cast("Sweeping Slash", ret => Core.Player.ActionPoints >= 6 && Targeting.ShouldFrontalConeAoe(0.5f, 179f)),
                         Spell.Cast("Saber Throw")
                         ));
             }

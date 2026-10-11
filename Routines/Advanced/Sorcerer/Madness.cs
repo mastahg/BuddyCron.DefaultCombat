@@ -20,6 +20,10 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Madness : RotationBase
     {
+        // Death Field (abl.sith_inquisitor.skill.madness.death_field): Target type Ground, Range up to
+        // 10 m, AoE Sphere radius 5 m around the placed point. No Sorcerer passive extends the range.
+        private const float DeathFieldRange = 1.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Madness;
 
         public override string Name => "Sorcerer Madness";
@@ -88,7 +92,8 @@ namespace DefaultCombat.Routines
                     Spell.DoT("Creeping Terror", "Creeping Terror"),
 
                     //Rotation
-                    Spell.CastOnGround("Death Field"),   // applies Deathmark, spreads DoTs
+                    //Death Field is a 5 m sphere placed at the target, castable only within 10 m.
+                    Spell.CastOnGround("Death Field", ret => Core.Player.Target.Distance <= DeathFieldRange),   // applies Deathmark, spreads DoTs
                     Spell.Cast("Demolish", ret => Core.Player.BuffCount("Wrath") >= 4 || Core.Player.Level < 50),
                     Spell.Cast("Force Leech"),
                     Spell.Cast("Lightning Strike", ret => Core.Player.BuffCount("Wrath") >= 4),
@@ -110,9 +115,11 @@ namespace DefaultCombat.Routines
                     new PrioritySelector(
                         Spell.DoT("Affliction", "Affliction"),
                         Spell.DoT("Creeping Terror", "Creeping Terror"),
-                        Spell.CastOnGround("Death Field"),
+                        //Death Field is a 5 m sphere placed at the target, castable only within 10 m.
+                        Spell.CastOnGround("Death Field", ret => Core.Player.Target.Distance <= DeathFieldRange && Targeting.ShouldTargetAoe(0.5f)),
                         Spell.Cast("Demolish", ret => Core.Player.BuffCount("Wrath") >= 4 || Core.Player.Level < 50),
-                        Spell.CastOnGround("Force Storm"),
+                        //Force Storm is an 8 m sphere placed at the target, castable within 30 m.
+                        Spell.CastOnGround("Force Storm", ret => Core.Player.Target.Distance <= 3.0f && Targeting.ShouldTargetAoe(0.8f)),
                         Spell.Cast("Force Lightning")
                         ));
             }

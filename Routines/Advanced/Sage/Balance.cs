@@ -20,6 +20,10 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class Balance : RotationBase
     {
+        // Force in Balance (abl.jedi_consular.skill.balance.force_in_balance): Target type Ground,
+        // Range up to 10 m, AoE Sphere radius 5 m around the placed point. No Sage passive extends it.
+        private const float ForceInBalanceRange = 1.0f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.Balance;
 
         public override string Name => "Sage Balance";
@@ -79,8 +83,8 @@ namespace DefaultCombat.Routines
                     Spell.DoT("Weaken Mind", "Weaken Mind"),
                     Spell.DoT("Sever Force", "Sever Force"),
 
-                    //Force in Balance on cooldown (ground-targeted sphere, applies Force Suppression)
-                    Spell.CastOnGround("Force in Balance"),
+                    //Force in Balance is a 5 m sphere placed at the target, castable only within 10 m.
+                    Spell.CastOnGround("Force in Balance", ret => Core.Player.Target.Distance <= ForceInBalanceRange),
 
                     //Force Serenity wants Weaken Mind on the target for its damage bonus
                     Spell.Cast("Force Serenity", ret => Core.Player.Target.HasMyDebuff("Weaken Mind") || Core.Player.Level < 30),
@@ -115,10 +119,12 @@ namespace DefaultCombat.Routines
                         //Keep the DoTs rolling -- Force in Balance spreads/benefits from them
                         Spell.DoT("Weaken Mind", "Weaken Mind"),
                         Spell.DoT("Sever Force", "Sever Force"),
-                        Spell.CastOnGround("Force in Balance"),
+                        //Force in Balance is a 5 m sphere placed at the target, castable only within 10 m.
+                        Spell.CastOnGround("Force in Balance", ret => Core.Player.Target.Distance <= ForceInBalanceRange && Targeting.ShouldTargetAoe(0.5f)),
 
                         Spell.Cast("Vanquish", ret => Core.Player.BuffCount("Presence of Mind") >= 4),
-                        Spell.CastOnGround("Forcequake")
+                        //Forcequake is an 8 m sphere placed at the target, castable within 30 m.
+                        Spell.CastOnGround("Forcequake", ret => Core.Player.Target.Distance <= 3.0f && Targeting.ShouldTargetAoe(0.8f))
                         ));
             }
         }

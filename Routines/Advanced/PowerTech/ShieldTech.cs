@@ -22,6 +22,11 @@ namespace DefaultCombat.Routines
     /// </summary>
     public class ShieldTech : RotationBase
     {
+        // Firestorm is self-cast and lands through an AoE Cone target override (abl.bounty_hunter.firestorm):
+        // Direction Forward, Distance 10.1 m, Angle 45 (read as the full cone width).
+        private const float FirestormReach = 1.0f;
+        private const float FirestormArc = 45f;
+
         public override CharacterDiscipline Discipline => CharacterDiscipline.ShieldTech;
 
         public override string Name => "Powertech Shield Tech";
@@ -57,7 +62,8 @@ namespace DefaultCombat.Routines
                     //live-verified: 60s cd, off-GCD). "Power Yield" is Advanced Prototype's and
                     //"Thermal Yield" is Pyrotech's -- neither is granted here.
                     Spell.Buff("Energy Yield", ret => Core.Player.InCombat && Core.Player.HealthPercent <= 70),
-                    Spell.CastOnGround("Oil Slick", ret => Core.Player.HealthPercent <= 75 && Core.Player.Target.EdgeDistance <= 0.8f),
+                    //Oil Slick is an 8 m sphere around us, not the target.
+                    Spell.CastOnGround("Oil Slick", ret => Core.Player.HealthPercent <= 75 && Core.Player.Target.Distance <= 0.8f),
                     Spell.Buff("Kolto Overload", ret => Core.Player.HealthPercent <= 30),
                     Spell.Buff("Unity", ret => Core.Player.Companion != null && Core.Player.HealthPercent <= 15),
 
@@ -88,7 +94,8 @@ namespace DefaultCombat.Routines
                     //Overheated -- free / procced casts only until heat bleeds off
                     new Decorator(ret => Core.Player.EnergyPercent <= 40,
                         new PrioritySelector(
-                            Spell.Cast("Firestorm", ret => Core.Player.HasBuff("Flame Engine") && Core.Player.Target.EdgeDistance <= 1f),
+                            //Firestorm is a 10 m forward cone from us; the engine never range-checks it.
+                            Spell.Cast("Firestorm", ret => Core.Player.HasBuff("Flame Engine") && Targeting.InFrontalCone(Core.Player.Target, FirestormReach, FirestormArc)),
                             Spell.Cast("Flame Burst", ret => Core.Player.HasBuff("Flame Surge")),
                             Spell.Cast("Rapid Shots")
                             )),
@@ -96,8 +103,9 @@ namespace DefaultCombat.Routines
                     //Rotation: Rocket Punch and Rail Shot are the Heat Screen generators, so they lead
                     Spell.Cast("Rocket Punch"),
                     Spell.Cast("Rail Shot"),
+                    //Firestorm is a 10 m forward cone from us; the engine never range-checks it.
                     Spell.Cast("Firestorm",
-                        ret => (Core.Player.HasBuff("Flame Engine") || Core.Player.Level < 50) && Core.Player.Target.EdgeDistance <= 1f),
+                        ret => (Core.Player.HasBuff("Flame Engine") || Core.Player.Level < 50) && Targeting.InFrontalCone(Core.Player.Target, FirestormReach, FirestormArc)),
                     Spell.Cast("Shoulder Cannon", ret => Core.Player.HasBuff("Shoulder Cannon") && Core.Player.Target.StrongOrGreater()),
 
                     //Fillers
@@ -115,13 +123,17 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     new Decorator(ret => Targeting.ShouldAoe,
                         new PrioritySelector(
-                            Spell.CastOnGround("Deadly Onslaught")
+                            //Deadly Onslaught is ground-placed at the target: 10 m max range, 5 m sphere.
+                            Spell.CastOnGround("Deadly Onslaught", ret => Core.Player.Target.Distance <= 1.0f && Targeting.ShouldTargetAoe(0.5f))
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
-                            Spell.Cast("Firestorm"),
-                            Spell.Cast("Shatter Slug"),
-                            Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50)
+                            //Forward cone, not a point-blank AoE: enemies around us only count when they stand inside it.
+                            Spell.Cast("Firestorm", ret => Targeting.ShouldFrontalConeAoe(FirestormReach, FirestormArc)),
+                            //Shatter Slug hits an 8 m sphere around the target.
+                            Spell.Cast("Shatter Slug", ret => Targeting.ShouldTargetAoe(0.8f)),
+                            //Flame Sweep is a 5 m sphere around us, not the target.
+                            Spell.Cast("Flame Sweep", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldPointBlankAoe(0.5f))
                             )));
             }
         }

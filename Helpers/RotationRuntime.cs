@@ -18,12 +18,15 @@ namespace DefaultCombat.Helpers
         internal static readonly Composite HeroicMoment = new Decorator(
             ret => Core.Player.HasBuff("Heroic Moment"),
             new PrioritySelector(
-                Spell.Cast("Legacy Force Sweep", ret => Core.Player.Target.EdgeDistance < .6f),
-                Spell.CastOnGround("Legacy Orbital Strike"),
+                //Self-cast 5 m sphere around us.
+                Spell.Cast("Legacy Force Sweep", ret => Core.Player.Target.Distance <= 0.5f),
+                //Ground AoE placed on the target, castable up to 30 m away.
+                Spell.CastOnGround("Legacy Orbital Strike", ret => Core.Player.Target.Distance <= 3f),
                 Spell.Cast("Legacy Project"),
                 Spell.Cast("Legacy Dirty Kick", ret => Core.Player.Target.EdgeDistance < .5f),
                 Spell.Cast("Legacy Sticky Plasma Grenade"),
-                Spell.Cast("Legacy Flame Thrower"),
+                //Self-cast 10 m / 45 degree forward cone, never range-checked by the engine.
+                Spell.Cast("Legacy Flame Thrower", ret => Targeting.InFrontalCone(Core.Player.Target, 1f, 45f)),
                 Spell.Cast("Legacy Force Lightning"),
                 Spell.Cast("Legacy Force Choke")));
 

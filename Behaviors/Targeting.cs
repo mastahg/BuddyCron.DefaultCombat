@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using BuddyCron;
+using BuddyCron.Helpers;
 using BuddyCron.Managers;
 using BuddyCron.Objects;
 using DefaultCombat.Helpers;
@@ -34,10 +35,11 @@ namespace DefaultCombat.Behaviors
         public static List<HeroCharacter> Tanks;
         /// <summary>Positions of the heal candidates, for AoE-heal placement.</summary>
         public static List<Vector3> HealCandidatePoints;
-        /// <summary>Hostile units in range this scan.</summary>
-        public static List<HeroCharacter> Enemies = new List<HeroCharacter>();
-        /// <summary>Positions of the enemies, for AoE placement.</summary>
-        public static List<Vector3> EnemyPoints = new List<Vector3>();
+        /// <summary>Living hostile units selected by or fighting the player, companion, or party.
+        /// Rebuilt at most once per game frame; don't hold the list across frames.</summary>
+        public static IReadOnlyList<HeroCharacter> Enemies => EnemyCache.Value.Units;
+        /// <summary>Positions of <see cref="Enemies"/>, in the same order and with the same lifetime.</summary>
+        public static IReadOnlyList<Vector3> EnemyPoints => EnemyCache.Value.Points;
 
         //Static Points and People
         /// <summary>Explicit tank name the user configured; empty for auto-detection.</summary>
@@ -87,6 +89,17 @@ namespace DefaultCombat.Behaviors
         /// <summary>Working list for the in-progress rescan.</summary>
         public static List<HeroCharacter> objects;
 
+        // One snapshot buffer reused every frame: the AoE gates of a single rotation pass call into
+        // it many times, so positions, facing and per-enemy distances are read and computed once.
+        private static readonly EnemySnapshot EnemyBuffer = new EnemySnapshot();
+        private static readonly FrameCachedObject<EnemySnapshot> EnemyCache =
+            new FrameCachedObject<EnemySnapshot>(RefreshEnemies);
+
+        // Shared by the enemy scan and interrupt targeting, both of which run every pass.
+        private static readonly List<HeroCharacter> NpcBuffer = new List<HeroCharacter>();
+        private static readonly FrameCachedObject<List<HeroCharacter>> NpcCache =
+            new FrameCachedObject<List<HeroCharacter>>(RefreshNpcs);
+
         //Determine if we should use the tank's target.
         private static bool UseTankTarget => Core.Player.Target == null && Tank != null && Tank.NodeId != Core.Player.NodeId && Tank.InCombat &&
                                              Tank.Target != null;
@@ -117,8 +130,6 @@ namespace DefaultCombat.Behaviors
 
                     HealCandidates = new List<HeroCharacter>();
                     HealCandidatePoints = new List<Vector3>();
-                    Enemies = new List<HeroCharacter>();
-                    EnemyPoints = new List<Vector3>();
                     Tanks = new List<HeroCharacter>();
 
                     if (cacheCount >= maxCacheCount || Objects == null)
@@ -174,24 +185,16 @@ namespace DefaultCombat.Behaviors
                         }
                     }
 
-                    foreach (var character in GetHeroCharacters())
+                    var enemies = EnemyCache.Value;
+                    if (enemies.Target != null)
                     {
-                        if (!character.IsValidTarget() || !IsEngagedWithParty(character))
-                            continue;
-
-                        Enemies.Add(character);
-                        EnemyPoints.Add(character.Location);
-                    }
-
-                    if (Core.Player.Target != null && Core.Player.Target.IsHostile && !Core.Player.Target.IsDead)
-                    {
-                        AoeDpsTarget = Core.Player.Target;
-                        AoeDpsPoint = Core.Player.Target.Location;
-                        AoeDpsCount = PointsAroundPoint(Core.Player.Target.Location, EnemyPoints, Distance.MeleeAoE);
+                        AoeDpsTarget = enemies.Target;
+                        AoeDpsPoint = enemies.TargetPoint;
+                        AoeDpsCount = CountNearTarget(enemies, Distance.MeleeAoE);
                         ShouldAoe = AoeDpsCount >= AoedpsCountNeeded;
                     }
 
-                    AoePeanutButterCount = PointsAroundPoint(Core.Player.Location, EnemyPoints, Distance.MeleeAoE);
+                    AoePeanutButterCount = CountNearPlayer(enemies, Distance.MeleeAoE);
                     ShouldPbaoe = AoePeanutButterCount >= AoedpsCountNeeded;
                     return RunStatus.Failure;
                 });
@@ -276,20 +279,66 @@ namespace DefaultCombat.Behaviors
             Objects.Add(character);
         }
 
-        /// <summary>Snapshot of all NPCs in the object manager as <see cref="HeroCharacter"/>
-        /// (source list for the enemy scan).</summary>
-        public static List<HeroCharacter> GetHeroCharacters()
+        /// <summary>All NPCs in the object manager as <see cref="HeroCharacter"/> (source list for the
+        /// enemy scan and interrupt targeting). Rebuilt at most once per game frame; don't hold the
+        /// list across frames.</summary>
+        public static IReadOnlyList<HeroCharacter> GetHeroCharacters()
         {
-            //List<HeroCharacter> objects = HeroObjectManager.GetObjectsOfType<HeroCharacter>().ToList();
+            return NpcCache.Value;
+        }
 
-            /*
-            if (Core.Player.Companion != null)
-                objects.Add(Core.Player.Companion);
-            */
-            var npcs = HeroObjectManager.GetObjectsOfType<HeroNPC>();
-            var objects = npcs.Cast<HeroCharacter>().ToList();
+        private static List<HeroCharacter> RefreshNpcs()
+        {
+            NpcBuffer.Clear();
+            foreach (var npc in HeroObjectManager.GetObjectsOfType<HeroNPC>())
+                NpcBuffer.Add(npc);
 
-            return objects;
+            return NpcBuffer;
+        }
+
+        /// <summary>Refills the shared snapshot: player origin and facing, the living hostile target,
+        /// and every engaged enemy with its distances to both and its heading relative to our facing.</summary>
+        private static EnemySnapshot RefreshEnemies()
+        {
+            var snapshot = EnemyBuffer;
+            snapshot.Units.Clear();
+            snapshot.Points.Clear();
+            snapshot.Geometry.Clear();
+            snapshot.Target = null;
+            snapshot.TargetPoint = Vector3.Zero;
+            snapshot.Origin = Vector3.Zero;
+            snapshot.Forward = Vector3.Zero;
+
+            var me = Core.Player;
+            if (me == null)
+                return snapshot;
+
+            snapshot.Origin = me.Location;
+            snapshot.Forward = me.Forward;
+            var target = me.Target;
+            if (target != null && target.IsHostile && !target.IsDead)
+            {
+                snapshot.Target = target;
+                snapshot.TargetPoint = target.Location;
+            }
+
+            foreach (var character in GetHeroCharacters())
+            {
+                if (!character.IsValidTarget() || !IsEngagedWithParty(character))
+                    continue;
+
+                var point = character.Location;
+                snapshot.Units.Add(character);
+                snapshot.Points.Add(point);
+                snapshot.Geometry.Add(new EnemyGeometry
+                {
+                    PlayerDistanceSqr = point.DistanceSqr(snapshot.Origin),
+                    TargetDistanceSqr = snapshot.Target != null ? point.DistanceSqr(snapshot.TargetPoint) : float.MaxValue,
+                    FacingCos = FacingCos(point, snapshot.Origin, snapshot.Forward)
+                });
+            }
+
+            return snapshot;
         }
 
         private static Vector3 AoeHealLocation(HeroCharacter p)
@@ -331,19 +380,40 @@ namespace DefaultCombat.Behaviors
             return PointsAroundPoint(center, EnemyPoints, distance) >= minMobs;
         }
 
+        /// <summary>True when enough tracked enemies stand within <paramref name="radius"/> of the
+        /// player to justify an AoE centered on the player.</summary>
+        public static bool ShouldPointBlankAoe(float radius)
+        {
+            return CountNearPlayer(EnemyCache.Value, radius) >= AoedpsCountNeeded;
+        }
+
+        /// <summary>True when enough tracked enemies stand within <paramref name="radius"/> of the
+        /// current hostile target to justify an AoE centered on it (including a ground AoE placed
+        /// on it); false without a hostile target.</summary>
+        public static bool ShouldTargetAoe(float radius)
+        {
+            var enemies = EnemyCache.Value;
+            return enemies.Target != null && CountNearTarget(enemies, radius) >= AoedpsCountNeeded;
+        }
+
         /// <summary>True when enough tracked enemies stand inside a cone in front of the player to
         /// justify a frontal-cone AoE: within <paramref name="range"/> of the player and within
         /// half of <paramref name="arcDegrees"/> (the full cone width) of the player's facing.</summary>
         public static bool ShouldFrontalConeAoe(float range, float arcDegrees)
         {
-            var forward = Core.Player.Forward;
-            if (forward == Vector3.Zero)
+            var enemies = EnemyCache.Value;
+            if (enemies.Forward == Vector3.Zero)
                 return false;
 
-            var origin = Core.Player.Location;
-            var maxDistance = range * range;
-            var minCos = MathF.Cos(arcDegrees * 0.5f * MathF.PI / 180f);
-            var inCone = EnemyPoints.Count(p => IsInCone(p, origin, forward, maxDistance, minCos));
+            var maxDistanceSqr = range * range;
+            var minCos = HalfArcCos(arcDegrees);
+            var inCone = 0;
+            foreach (var enemy in enemies.Geometry)
+            {
+                if (enemy.PlayerDistanceSqr <= maxDistanceSqr && enemy.FacingCos >= minCos)
+                    inCone++;
+            }
+
             return inCone >= AoedpsCountNeeded;
         }
 
@@ -356,30 +426,90 @@ namespace DefaultCombat.Behaviors
             if (unit == null)
                 return false;
 
-            var forward = Core.Player.Forward;
-            if (forward == Vector3.Zero)
+            var enemies = EnemyCache.Value;
+            if (enemies.Forward == Vector3.Zero)
                 return false;
 
-            var minCos = MathF.Cos(arcDegrees * 0.5f * MathF.PI / 180f);
-            return IsInCone(unit.Location, Core.Player.Location, forward, range * range, minCos);
+            var point = unit.Location;
+            return point.DistanceSqr(enemies.Origin) <= range * range &&
+                   FacingCos(point, enemies.Origin, enemies.Forward) >= HalfArcCos(arcDegrees);
         }
 
-        private static bool IsInCone(Vector3 point, Vector3 origin, Vector3 forward, float maxDistanceSqr, float minCos)
+        private static int CountNearPlayer(EnemySnapshot enemies, float radius)
         {
-            if (point.DistanceSqr(origin) > maxDistanceSqr)
-                return false;
+            var maxDistanceSqr = radius * radius;
+            var count = 0;
+            foreach (var enemy in enemies.Geometry)
+            {
+                if (enemy.PlayerDistanceSqr <= maxDistanceSqr)
+                    count++;
+            }
 
-            // Facing is yaw-only, so compare headings in the ground plane; a point on top of us has
-            // no heading and is inside every cone.
+            return count;
+        }
+
+        private static int CountNearTarget(EnemySnapshot enemies, float radius)
+        {
+            var maxDistanceSqr = radius * radius;
+            var count = 0;
+            foreach (var enemy in enemies.Geometry)
+            {
+                if (enemy.TargetDistanceSqr <= maxDistanceSqr)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static float HalfArcCos(float arcDegrees)
+        {
+            return MathF.Cos(arcDegrees * 0.5f * MathF.PI / 180f);
+        }
+
+        // Facing is yaw-only, so compare headings in the ground plane; a point on top of us has no
+        // heading and is inside every cone.
+        private static float FacingCos(Vector3 point, Vector3 origin, Vector3 forward)
+        {
             var planar = new Vector3(point.X - origin.X, 0f, point.Z - origin.Z);
             var length = planar.Length();
-            return length < 0.0001f || Vector3.Dot(planar / length, forward) >= minCos;
+            return length < 0.0001f ? 1f : Vector3.Dot(planar, forward) / length;
         }
 
-        private static int PointsAroundPoint(Vector3 pt, List<Vector3> l, float dist)
+        private static int PointsAroundPoint(Vector3 pt, IReadOnlyList<Vector3> points, float dist)
         {
             var maxDistance = dist * dist;
-            return l.Count(p => p.DistanceSqr(pt) <= maxDistance);
+            var count = 0;
+            for (var i = 0; i < points.Count; i++)
+            {
+                if (points[i].DistanceSqr(pt) <= maxDistance)
+                    count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>Per-frame view of the engaged enemies; <see cref="Points"/> and
+        /// <see cref="Geometry"/> run parallel to <see cref="Units"/>.</summary>
+        private sealed class EnemySnapshot
+        {
+            public readonly List<HeroCharacter> Units = new List<HeroCharacter>();
+            public readonly List<Vector3> Points = new List<Vector3>();
+            public readonly List<EnemyGeometry> Geometry = new List<EnemyGeometry>();
+            /// <summary>Living hostile current target, or null.</summary>
+            public HeroCharacter Target;
+            public Vector3 TargetPoint;
+            public Vector3 Origin;
+            /// <summary>Player facing in the ground plane; <see cref="Vector3.Zero"/> when unreadable.</summary>
+            public Vector3 Forward;
+        }
+
+        private struct EnemyGeometry
+        {
+            public float PlayerDistanceSqr;
+            /// <summary><see cref="float.MaxValue"/> without a hostile target.</summary>
+            public float TargetDistanceSqr;
+            /// <summary>Cosine of the planar angle between our facing and the enemy (1 when on top of us).</summary>
+            public float FacingCos;
         }
     }
 }

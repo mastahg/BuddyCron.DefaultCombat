@@ -104,14 +104,16 @@ namespace DefaultCombat.Routines
                 return new PrioritySelector(
                     new Decorator(ret => Targeting.ShouldAoe,
                         new PrioritySelector(
-                            Spell.CastOnGround("Artillery Blitz")
+                            //Artillery Blitz is ground-placed at the target: 10 m max range, 5 m sphere.
+                            Spell.CastOnGround("Artillery Blitz", ret => Core.Player.Target.Distance <= 1.0f && Targeting.ShouldTargetAoe(0.5f))
                             )),
                     new Decorator(ret => Targeting.ShouldPbaoe,
                         new PrioritySelector(
-                            //Flak Shell spreads the Gut bleed to everything it hits
-                            Spell.Cast("Flak Shell"),
+                            //Flak Shell spreads the Gut bleed to everything in an 8 m sphere around the target
+                            Spell.Cast("Flak Shell", ret => Targeting.ShouldTargetAoe(0.8f)),
                             Spell.Cast("Cell Burst", ret => Core.Player.BuffCount("Energy Lode") >= 4),
-                            Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50)
+                            //Explosive Surge is a 5 m sphere around us, not the target.
+                            Spell.Cast("Explosive Surge", ret => Core.Player.EnergyPercent >= 50 && Targeting.ShouldPointBlankAoe(0.5f))
                         )));
             }
         }

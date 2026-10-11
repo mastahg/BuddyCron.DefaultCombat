@@ -136,9 +136,12 @@ namespace DefaultCombat.Routines
             {
                 return new Decorator(ret => Targeting.ShouldAoe && !HoldForOpener,
                     new PrioritySelector(
-                        Spell.Cast("Bushwhack", ret => Core.Player.HasBuff("Upper Hand")),
-                        Spell.Cast("Lacerating Blast"),
-                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent >= 60)
+                        //Bushwhack is an 8 m sphere around us, not the target.
+                        Spell.Cast("Bushwhack", ret => Core.Player.HasBuff("Upper Hand") && Targeting.ShouldPointBlankAoe(0.8f)),
+                        //Lacerating Blast is a 10 m / 45 degree forward cone from us.
+                        Spell.Cast("Lacerating Blast", ret => Targeting.ShouldFrontalConeAoe(1.0f, 45f)),
+                        //Thermal Grenade splashes 5 m around the target.
+                        Spell.Cast("Thermal Grenade", ret => Core.Player.EnergyPercent >= 60 && Targeting.ShouldTargetAoe(0.5f))
                     ));
             }
         }
